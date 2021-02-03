@@ -11,65 +11,65 @@ import (
 	pkg "github.com/alexandear/fake-private-contributions/internal"
 )
 
-type Storage interface {
-	AddCommit(projectName string, commit *pkg.Commit) error
-}
-
 type Service struct {
 	logger       *log.Logger
 	gitlabClient *gitlab.Client
-	storage      Storage
 }
 
-func New(logger *log.Logger, gitlabClient *gitlab.Client, storage Storage) *Service {
+func New(logger *log.Logger, gitlabClient *gitlab.Client) *Service {
 	return &Service{
 		logger:       logger,
 		gitlabClient: gitlabClient,
-		storage:      storage,
 	}
 }
 
-func (s *Service) FetchCommits(ctx context.Context, project *pkg.Project) {
-	if project == nil {
-		return
-	}
+func (s *Service) FetchCommits(ctx context.Context, project *pkg.Project) chan *pkg.Commit {
+	commits := make(chan *pkg.Commit, 500)
 
-	opt := &gitlab.ListCommitsOptions{
-		ListOptions: gitlab.ListOptions{
-			PerPage: 50,
-			Page:    1,
-		},
-	}
+	go func() {
+		defer close(commits)
 
-	for {
-		comms, resp, err := s.gitlabClient.Commits.ListCommits(project.ID, opt, gitlab.WithContext(ctx))
-		if err != nil {
-			s.logger.Printf("failed to get commits for project: %d", project.ID)
-
+		if project == nil {
 			return
 		}
 
-		for _, c := range comms {
-			if c.CommittedDate == nil {
-				continue
-			}
-
-			s.logger.Printf("fetching commit: %v", c.ID)
-
-			if err := s.storage.AddCommit(project.Name, &pkg.Commit{
-				When:    *c.CommittedDate,
-				Message: c.CommittedDate.String(),
-			}); err != nil {
-				s.logger.Printf("failed to add commit %v to storage: %v", c, err)
-			}
+		opt := &gitlab.ListCommitsOptions{
+			ListOptions: gitlab.ListOptions{
+				PerPage: 50,
+				Page:    1,
+			},
 		}
 
-		if resp.CurrentPage >= resp.TotalPages {
-			break
-		}
+		for {
+			comms, resp, err := s.gitlabClient.Commits.ListCommits(project.ID, opt, gitlab.WithContext(ctx))
+			if err != nil {
+				s.logger.Printf("failed to get commits for project: %d", project.ID)
 
-		opt.Page = resp.NextPage
-	}
+				return
+			}
+
+			for _, c := range comms {
+				if c.CommittedDate == nil {
+					continue
+				}
+
+				s.logger.Printf("fetching commit: %s", c.ID)
+
+				commits <- &pkg.Commit{
+					When:    *c.CommittedDate,
+					Message: c.CommittedDate.String(),
+				}
+			}
+
+			if resp.CurrentPage >= resp.TotalPages {
+				break
+			}
+
+			opt.Page = resp.NextPage
+		}
+	}()
+
+	return commits
 }
 
 func (s *Service) FirstProject(ctx context.Context) (*pkg.Project, error) {

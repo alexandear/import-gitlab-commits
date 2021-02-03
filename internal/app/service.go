@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -26,10 +25,11 @@ import (
 
 type Fetcher interface {
 	FirstProject(ctx context.Context) (*pkg.Project, error)
-	FetchCommits(ctx context.Context, project *pkg.Project)
+	FetchCommits(ctx context.Context, project *pkg.Project) chan *pkg.Commit
 }
 
 type Storage interface {
+	AddCommit(projectName string, commit *pkg.Commit) error
 	NextCommit(projectName string) chan *pkg.Commit
 }
 
@@ -61,12 +61,11 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL) (*App, 
 		return nil, fmt.Errorf("failed to open database %s: %w", dbName, err)
 	}
 
-	storage := bboltS.New(db)
-	f := fetcher.New(logger, gitlabClient, storage)
+	f := fetcher.New(logger, gitlabClient)
 	a := &App{
 		logger:  logger,
 		fetcher: f,
-		storage: storage,
+		storage: bboltS.New(db),
 	}
 
 	return a, nil
@@ -96,7 +95,11 @@ func (a *App) Run(ctx context.Context) error {
 
 	a.logger.Printf("got project: %v", project)
 
-	a.fetcher.FetchCommits(ctx, project)
+	for commit := range a.fetcher.FetchCommits(ctx, project) {
+		if errAdd := a.storage.AddCommit(project.Name, commit); errAdd != nil {
+			a.logger.Printf("failed to add commit %v: %v", commit, errAdd)
+		}
+	}
 
 	committer := &object.Signature{
 		Name:  "Oleksandr Redko",
@@ -108,7 +111,7 @@ func (a *App) Run(ctx context.Context) error {
 	for commit := range a.storage.NextCommit(project.Name) {
 		committer.When = commit.When
 
-		h, cerr := w.Commit("commit "+strconv.Itoa(i), &git.CommitOptions{
+		h, cerr := w.Commit(commit.Message, &git.CommitOptions{
 			Author:    committer,
 			Committer: committer,
 		})
