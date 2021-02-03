@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,12 +12,15 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/xanzy/go-gitlab"
 
 	pkg "github.com/alexandear/fake-private-contributions/internal"
+	"github.com/alexandear/fake-private-contributions/internal/fetcher"
 )
 
 type Fetcher interface {
-	Next() <-chan *pkg.Commit
+	FirstProject(ctx context.Context) (*pkg.Project, error)
+	Next(project *pkg.Project) <-chan *pkg.Commit
 }
 
 type App struct {
@@ -24,14 +28,22 @@ type App struct {
 	fetcher Fetcher
 }
 
-func New(logger *log.Logger, fetcher Fetcher) *App {
-	return &App{
-		logger:  logger,
-		fetcher: fetcher,
+func New(logger *log.Logger, gitlabToken, gitlabBaseURL string) (*App, error) {
+	gitlabClient, err := gitlab.NewClient(gitlabToken, gitlab.WithBaseURL(gitlabBaseURL))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GitLab client: %w", err)
 	}
+
+	f := fetcher.New(logger, gitlabClient)
+	a := &App{
+		logger:  logger,
+		fetcher: f,
+	}
+
+	return a, nil
 }
 
-func (a *App) Run() error {
+func (a *App) Run(ctx context.Context) error {
 	a.logger.Println("init repo in memory")
 
 	fs := memfs.New()
@@ -53,9 +65,16 @@ func (a *App) Run() error {
 		Email: "oleksandr.red+github@gmail.com",
 	}
 
+	project, err := a.fetcher.FirstProject(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get first project: %w", err)
+	}
+
+	a.logger.Printf("got project: %v", project)
+
 	i := 0
 
-	for commit := range a.fetcher.Next() {
+	for commit := range a.fetcher.Next(project) {
 		committer.When = commit.When
 
 		h, cerr := w.Commit("commit "+strconv.Itoa(i), &git.CommitOptions{
