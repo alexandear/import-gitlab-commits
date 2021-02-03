@@ -44,3 +44,8 @@ vendor:
 generate:
 	@echo generate
 	@go generate ./...
+
+.PHONY: run
+run:
+	@echo run
+	@go run -race .
