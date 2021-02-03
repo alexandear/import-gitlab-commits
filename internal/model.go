@@ -5,9 +5,14 @@ import (
 )
 
 type Project struct {
-	ID int
+	ID   int
+	Name string
 }
 
 type Commit struct {
-	When time.Time
+	// When is commit date.
+	When time.Time `json:"when"`
+
+	// Commit message.
+	Message string `json:"message"`
 }

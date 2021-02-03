@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"time"
 
@@ -27,9 +28,9 @@ func Execute(logger *log.Logger) error {
 		return NewErrInvalidArgument("empty GITLAB_TOKEN")
 	}
 
-	baseURL := os.Getenv("GITLAB_BASE_URL")
-	if baseURL == "" {
-		return NewErrInvalidArgument("empty GITLAB_BASE_URL")
+	baseURL, err := url.Parse(os.Getenv("GITLAB_BASE_URL"))
+	if err != nil {
+		return fmt.Errorf("wrong GITLAB_BASE_URL value: %w", err)
 	}
 
 	a, err := app.New(logger, token, baseURL)
