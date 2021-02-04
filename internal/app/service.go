@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-git/go-billy/v5/memfs"
@@ -24,13 +25,15 @@ import (
 )
 
 type Fetcher interface {
-	FirstProject(ctx context.Context) (*pkg.Project, error)
+	FetchProjects(ctx context.Context) <-chan *pkg.Project
 	FetchCommits(ctx context.Context, project *pkg.Project) chan *pkg.Commit
 }
 
 type Storage interface {
 	AddCommit(projectName string, commit *pkg.Commit) error
 	NextCommit(projectName string) chan *pkg.Commit
+	AddProject(project *pkg.Project) error
+	NextProject() chan *pkg.Project
 }
 
 type App struct {
@@ -74,6 +77,26 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL) (*App, 
 func (a *App) Run(ctx context.Context) error {
 	a.logger.Println("init repo in memory")
 
+	a.logger.Println("saving projects to storage")
+
+	projects := a.fetcher.FetchProjects(ctx)
+
+	const workers = 5
+
+	var wg sync.WaitGroup
+
+	wg.Add(workers)
+
+	for i := 0; i < workers; i++ {
+		go func() {
+			a.storeProjects(ctx, projects)
+
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
 	fs := memfs.New()
 
 	r, err := git.Init(memory.NewStorage(), fs)
@@ -86,14 +109,10 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	a.logger.Println("make initial commit")
-
-	project, err := a.fetcher.FirstProject(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get first project: %w", err)
+	project := &pkg.Project{
+		ID:   277,
+		Name: "277",
 	}
-
-	a.logger.Printf("got project: %v", project)
 
 	for commit := range a.fetcher.FetchCommits(ctx, project) {
 		if errAdd := a.storage.AddCommit(project.Name, commit); errAdd != nil {
@@ -146,4 +165,21 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (a *App) storeProjects(ctx context.Context, projects <-chan *pkg.Project) {
+	for project := range projects {
+		select {
+		default:
+			a.logger.Printf("adding project: %v", project)
+
+			if errAdd := a.storage.AddProject(project); errAdd != nil {
+				a.logger.Printf("failed to add project %v: %v", project, errAdd)
+			}
+		case <-ctx.Done():
+			a.logger.Printf("save projects done")
+
+			return
+		}
+	}
 }

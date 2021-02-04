@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/xanzy/go-gitlab"
 
@@ -24,7 +25,9 @@ func New(logger *log.Logger, gitlabClient *gitlab.Client) *Service {
 }
 
 func (s *Service) FetchCommits(ctx context.Context, project *pkg.Project) chan *pkg.Commit {
-	commits := make(chan *pkg.Commit, 500)
+	const chanSize = 100
+
+	commits := make(chan *pkg.Commit, chanSize)
 
 	go func() {
 		defer close(commits)
@@ -35,7 +38,7 @@ func (s *Service) FetchCommits(ctx context.Context, project *pkg.Project) chan *
 
 		opt := &gitlab.ListCommitsOptions{
 			ListOptions: gitlab.ListOptions{
-				PerPage: 50,
+				PerPage: chanSize,
 				Page:    1,
 			},
 		}
@@ -43,7 +46,7 @@ func (s *Service) FetchCommits(ctx context.Context, project *pkg.Project) chan *
 		for {
 			comms, resp, err := s.gitlabClient.Commits.ListCommits(project.ID, opt, gitlab.WithContext(ctx))
 			if err != nil {
-				s.logger.Printf("failed to get commits for project: %d", project.ID)
+				s.logger.Printf("failed to get commits for project %d: %v", project.ID, err)
 
 				return
 			}
@@ -72,15 +75,74 @@ func (s *Service) FetchCommits(ctx context.Context, project *pkg.Project) chan *
 	return commits
 }
 
-func (s *Service) FirstProject(ctx context.Context) (*pkg.Project, error) {
-	projects, _, err := s.gitlabClient.Projects.ListProjects(&gitlab.ListProjectsOptions{}, gitlab.WithContext(ctx))
+func (s *Service) FetchProjects(ctx context.Context) <-chan *pkg.Project {
+	const chanSize = 100
+
+	projects := make(chan *pkg.Project, chanSize)
+
+	go func() {
+		defer close(projects)
+
+		page := 1
+		for page > 0 {
+			select {
+			case <-ctx.Done():
+				s.logger.Printf("fetching canceled")
+
+				return
+			default:
+			}
+
+			nextPage, err := s.fetchOneProjectPage(ctx, chanSize, page, projects)
+			if err != nil {
+				s.logger.Printf("failed to fetch one project page: %v", err)
+
+				return
+			}
+
+			page = nextPage
+		}
+	}()
+
+	return projects
+}
+
+func (s *Service) fetchOneProjectPage(ctx context.Context, chanSize, page int, projects chan<- *pkg.Project,
+) (nextPage int, err error) {
+	ctxOne, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	opt := &gitlab.ListProjectsOptions{
+		ListOptions: gitlab.ListOptions{
+			PerPage: chanSize,
+			Page:    page,
+		},
+		Simple:     gitlab.Bool(true),
+		Membership: gitlab.Bool(true),
+	}
+
+	projs, resp, err := s.gitlabClient.Projects.ListProjects(opt, gitlab.WithContext(ctxOne))
 	if err != nil {
-		return nil, fmt.Errorf("failed to list projects: %w", err)
+		return 0, fmt.Errorf("failed to list projects: %w", err)
 	}
 
-	if len(projects) < 1 {
-		return nil, nil
+	for _, p := range projs {
+		select {
+		case projects <- &pkg.Project{
+			ID:   p.ID,
+			Name: strconv.Itoa(p.ID),
+		}:
+			s.logger.Printf("fetching project: %d", p.ID)
+		case <-ctx.Done():
+			return 0, nil
+		}
 	}
 
-	return &pkg.Project{ID: projects[0].ID, Name: strconv.Itoa(projects[0].ID)}, nil
+	if resp.CurrentPage >= resp.TotalPages {
+		s.logger.Printf("total pages")
+
+		return 0, nil
+	}
+
+	return resp.NextPage, nil
 }
