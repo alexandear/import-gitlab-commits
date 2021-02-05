@@ -29,15 +29,16 @@ const (
 )
 
 type Fetcher interface {
-	FetchProjects(ctx context.Context) <-chan *pkg.Project
-	FetchCommits(ctx context.Context, project *pkg.Project) chan *pkg.Commit
+	FetchProjects(ctx context.Context, idAfter int) <-chan *pkg.Project
+	FetchCommits(ctx context.Context, projectID int) chan *pkg.Commit
 }
 
 type Storage interface {
-	AddCommit(projectName string, commit *pkg.Commit) error
-	NextCommit(projectName string) chan *pkg.Commit
+	AddCommit(projectID int, commit *pkg.Commit) error
+	NextCommit(projectID int) chan *pkg.Commit
 	AddProject(project *pkg.Project) error
 	NextProject() chan *pkg.Project
+	LastProject() (*pkg.Project, error)
 }
 
 type App struct {
@@ -81,11 +82,14 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL) (*App, 
 }
 
 func (a *App) Run(ctx context.Context) error {
-	a.logger.Println("init repo in memory")
+	lastProject, err := a.storage.LastProject()
+	if err != nil {
+		return fmt.Errorf("failed to get last project: %w", err)
+	}
 
-	a.logger.Println("saving projects to storage")
+	a.logger.Printf("last saved project is %d", lastProject.ID)
 
-	projects := a.fetcher.FetchProjects(ctx)
+	projects := a.fetcher.FetchProjects(ctx, lastProject.ID)
 
 	const workers = 5
 
@@ -102,6 +106,8 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	wg.Wait()
+
+	a.logger.Println("init repo in memory")
 
 	fs := memfs.New()
 
@@ -120,8 +126,8 @@ func (a *App) Run(ctx context.Context) error {
 		Name: "277",
 	}
 
-	for commit := range a.fetcher.FetchCommits(ctx, project) {
-		if errAdd := a.storage.AddCommit(project.Name, commit); errAdd != nil {
+	for commit := range a.fetcher.FetchCommits(ctx, project.ID) {
+		if errAdd := a.storage.AddCommit(project.ID, commit); errAdd != nil {
 			a.logger.Printf("failed to add commit %v: %v", commit, errAdd)
 		}
 	}
@@ -133,7 +139,7 @@ func (a *App) Run(ctx context.Context) error {
 
 	i := 0
 
-	for commit := range a.storage.NextCommit(project.Name) {
+	for commit := range a.storage.NextCommit(project.ID) {
 		committer.When = commit.When
 
 		h, cerr := w.Commit(commit.Message, &git.CommitOptions{
@@ -197,9 +203,10 @@ func newCurrentUser(ctx context.Context, gitlabClient *gitlab.Client) (*pkg.User
 	}
 
 	return &pkg.User{
-		Name:     u.Name,
-		Email:    u.Email,
-		Username: u.Username,
+		Name:      u.Name,
+		Email:     u.Email,
+		Username:  u.Username,
+		CreatedAt: *u.CreatedAt,
 	}, nil
 }
 

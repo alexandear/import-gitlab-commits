@@ -18,7 +18,8 @@ type Commit struct {
 }
 
 type User struct {
-	Name     string
-	Email    string
-	Username string
+	Name      string
+	Email     string
+	Username  string
+	CreatedAt time.Time
 }

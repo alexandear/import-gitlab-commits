@@ -27,7 +27,7 @@ func New(logger *log.Logger, gitlabClient *gitlab.Client, user *pkg.User) *Servi
 	}
 }
 
-func (s *Service) FetchCommits(ctx context.Context, project *pkg.Project) chan *pkg.Commit {
+func (s *Service) FetchCommits(ctx context.Context, projectID int) chan *pkg.Commit {
 	const chanSize = 100
 
 	commits := make(chan *pkg.Commit, chanSize)
@@ -35,50 +35,76 @@ func (s *Service) FetchCommits(ctx context.Context, project *pkg.Project) chan *
 	go func() {
 		defer close(commits)
 
-		if project == nil {
-			return
-		}
+		page := 1
+		for page > 0 {
+			select {
+			case <-ctx.Done():
+				s.logger.Printf("fetching canceled")
 
-		opt := &gitlab.ListCommitsOptions{
-			ListOptions: gitlab.ListOptions{
-				PerPage: chanSize,
-				Page:    1,
-			},
-		}
+				return
+			default:
+			}
 
-		for {
-			comms, resp, err := s.gitlabClient.Commits.ListCommits(project.ID, opt, gitlab.WithContext(ctx))
+			nextPage, err := s.fetchCommitPage(ctx, page, chanSize, projectID, commits)
 			if err != nil {
-				s.logger.Printf("failed to get commits for project %d: %v", project.ID, err)
+				s.logger.Printf("failed to fetch one commit page: %v", err)
 
 				return
 			}
 
-			for _, c := range comms {
-				if c.CommittedDate == nil {
-					continue
-				}
-
-				s.logger.Printf("fetching commit: %s", c.ID)
-
-				commits <- &pkg.Commit{
-					When:    *c.CommittedDate,
-					Message: c.CommittedDate.String(),
-				}
-			}
-
-			if resp.CurrentPage >= resp.TotalPages {
-				break
-			}
-
-			opt.Page = resp.NextPage
+			page = nextPage
 		}
 	}()
 
 	return commits
 }
 
-func (s *Service) FetchProjects(ctx context.Context) <-chan *pkg.Project {
+func (s *Service) fetchCommitPage(ctx context.Context, page, perPage int, projectID int, commits chan<- *pkg.Commit,
+) (nextPage int, err error) {
+	ctxOne, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	opt := &gitlab.ListCommitsOptions{
+		ListOptions: gitlab.ListOptions{
+			PerPage: perPage,
+			Page:    page,
+		},
+		Since: &s.user.CreatedAt,
+	}
+
+	comms, resp, err := s.gitlabClient.Commits.ListCommits(projectID, opt, gitlab.WithContext(ctxOne))
+	if err != nil {
+		return 0, fmt.Errorf("failed to get commits for project %d: %w", projectID, err)
+	}
+
+	for _, c := range comms {
+		select {
+		default:
+			s.logger.Printf("fetching commit: %s", c.ID)
+
+			if !strings.EqualFold(c.AuthorEmail, s.user.Email) || !strings.EqualFold(c.CommitterEmail, s.user.Email) {
+				s.logger.Printf("commit %s isn't current user's %s contribution", c.ID, s.user.Email)
+
+				continue
+			}
+
+			commits <- &pkg.Commit{
+				When:    *c.CommittedDate,
+				Message: c.CommittedDate.Format(time.RFC3339),
+			}
+		case <-ctx.Done():
+			return 0, nil
+		}
+	}
+
+	if resp.CurrentPage >= resp.TotalPages {
+		return 0, nil
+	}
+
+	return resp.NextPage, nil
+}
+
+func (s *Service) FetchProjects(ctx context.Context, idAfter int) <-chan *pkg.Project {
 	const chanSize = 100
 
 	projects := make(chan *pkg.Project, chanSize)
@@ -96,7 +122,7 @@ func (s *Service) FetchProjects(ctx context.Context) <-chan *pkg.Project {
 			default:
 			}
 
-			nextPage, err := s.fetchProjectPage(ctx, page, chanSize, projects)
+			nextPage, err := s.fetchProjectPage(ctx, page, chanSize, idAfter, projects)
 			if err != nil {
 				s.logger.Printf("failed to fetch one project page: %v", err)
 
@@ -110,7 +136,7 @@ func (s *Service) FetchProjects(ctx context.Context) <-chan *pkg.Project {
 	return projects
 }
 
-func (s *Service) fetchProjectPage(ctx context.Context, page, perPage int, projects chan<- *pkg.Project,
+func (s *Service) fetchProjectPage(ctx context.Context, page, perPage, idAfter int, projects chan<- *pkg.Project,
 ) (nextPage int, err error) {
 	ctxOne, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -120,8 +146,11 @@ func (s *Service) fetchProjectPage(ctx context.Context, page, perPage int, proje
 			Page:    page,
 			PerPage: perPage,
 		},
+		OrderBy:    gitlab.String("id"),
+		Sort:       gitlab.String("asc"),
 		Simple:     gitlab.Bool(true),
 		Membership: gitlab.Bool(true),
+		IDAfter:    gitlab.Int(idAfter),
 	}
 
 	projs, resp, err := s.gitlabClient.Projects.ListProjects(opt, gitlab.WithContext(ctxOne))
@@ -135,7 +164,7 @@ func (s *Service) fetchProjectPage(ctx context.Context, page, perPage int, proje
 			s.logger.Printf("fetching project: %d", p.ID)
 
 			if !s.hasContributionsByCurrentUser(ctx, p.ID) {
-				s.logger.Printf("project %d hasn't current user %s contributions", p.ID, s.user.Email)
+				s.logger.Printf("project %d doesn't has user's %s contributions", p.ID, s.user.Email)
 
 				continue
 			}
@@ -150,8 +179,6 @@ func (s *Service) fetchProjectPage(ctx context.Context, page, perPage int, proje
 	}
 
 	if resp.CurrentPage >= resp.TotalPages {
-		s.logger.Printf("total pages")
-
 		return 0, nil
 	}
 
@@ -159,9 +186,11 @@ func (s *Service) fetchProjectPage(ctx context.Context, page, perPage int, proje
 }
 
 func (s *Service) hasContributionsByCurrentUser(ctx context.Context, projectID int) bool {
+	const perPage = 50
+
 	opt := &gitlab.ListContributorsOptions{
 		ListOptions: gitlab.ListOptions{
-			PerPage: 50,
+			PerPage: perPage,
 			Page:    1,
 		},
 	}
