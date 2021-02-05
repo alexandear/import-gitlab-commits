@@ -95,7 +95,7 @@ func (s *Service) fetchCommitPage(ctx context.Context, page, perPage int, since 
 
 			commits <- &pkg.Commit{
 				CommittedAt: *c.CommittedDate,
-				Message:     c.CommittedDate.Format(time.RFC3339),
+				Message:     c.ID,
 			}
 		case <-ctx.Done():
 			return 0, nil
