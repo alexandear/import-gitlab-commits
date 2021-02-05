@@ -16,3 +16,9 @@ type Commit struct {
 	// Commit message.
 	Message string `json:"message"`
 }
+
+type User struct {
+	Name     string
+	Email    string
+	Username string
+}

@@ -24,6 +24,10 @@ import (
 	"github.com/alexandear/fake-private-contributions/internal/fetcher"
 )
 
+const (
+	getCurrentUserTimeout = 2 * time.Second
+)
+
 type Fetcher interface {
 	FetchProjects(ctx context.Context) <-chan *pkg.Project
 	FetchCommits(ctx context.Context, project *pkg.Project) chan *pkg.Commit
@@ -48,23 +52,25 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL) (*App, 
 		return nil, fmt.Errorf("failed to create GitLab client: %w", err)
 	}
 
-	host := gitlabBaseURL.Host
+	ctx, cancel := context.WithTimeout(context.Background(), getCurrentUserTimeout)
+	currentUser, err := newCurrentUser(ctx, gitlabClient)
 
-	hostPort := strings.Split(host, ":")
-	if len(hostPort) > 2 {
-		host = hostPort[0]
+	cancel()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}
 
-	dbName := host + ".db"
-
 	const createIfNotExist = os.FileMode(0o600)
+
+	dbName := dbName(gitlabBaseURL, currentUser)
 
 	db, err := bbolt.Open(dbName, createIfNotExist, &bbolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database %s: %w", dbName, err)
 	}
 
-	f := fetcher.New(logger, gitlabClient)
+	f := fetcher.New(logger, gitlabClient, currentUser)
 	a := &App{
 		logger:  logger,
 		fetcher: f,
@@ -182,4 +188,28 @@ func (a *App) storeProjects(ctx context.Context, projects <-chan *pkg.Project) {
 			return
 		}
 	}
+}
+
+func newCurrentUser(ctx context.Context, gitlabClient *gitlab.Client) (*pkg.User, error) {
+	u, _, err := gitlabClient.Users.CurrentUser(gitlab.WithContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current user: %w", err)
+	}
+
+	return &pkg.User{
+		Name:     u.Name,
+		Email:    u.Email,
+		Username: u.Username,
+	}, nil
+}
+
+func dbName(baseURL *url.URL, user *pkg.User) string {
+	host := baseURL.Host
+
+	hostPort := strings.Split(host, ":")
+	if len(hostPort) > 2 {
+		host = hostPort[0]
+	}
+
+	return host + "." + user.Username + ".db"
 }

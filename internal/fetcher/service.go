@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/xanzy/go-gitlab"
@@ -15,12 +16,14 @@ import (
 type Service struct {
 	logger       *log.Logger
 	gitlabClient *gitlab.Client
+	user         *pkg.User
 }
 
-func New(logger *log.Logger, gitlabClient *gitlab.Client) *Service {
+func New(logger *log.Logger, gitlabClient *gitlab.Client, user *pkg.User) *Service {
 	return &Service{
 		logger:       logger,
 		gitlabClient: gitlabClient,
+		user:         user,
 	}
 }
 
@@ -93,7 +96,7 @@ func (s *Service) FetchProjects(ctx context.Context) <-chan *pkg.Project {
 			default:
 			}
 
-			nextPage, err := s.fetchOneProjectPage(ctx, chanSize, page, projects)
+			nextPage, err := s.fetchProjectPage(ctx, page, chanSize, projects)
 			if err != nil {
 				s.logger.Printf("failed to fetch one project page: %v", err)
 
@@ -107,15 +110,15 @@ func (s *Service) FetchProjects(ctx context.Context) <-chan *pkg.Project {
 	return projects
 }
 
-func (s *Service) fetchOneProjectPage(ctx context.Context, chanSize, page int, projects chan<- *pkg.Project,
+func (s *Service) fetchProjectPage(ctx context.Context, page, perPage int, projects chan<- *pkg.Project,
 ) (nextPage int, err error) {
 	ctxOne, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	opt := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
-			PerPage: chanSize,
 			Page:    page,
+			PerPage: perPage,
 		},
 		Simple:     gitlab.Bool(true),
 		Membership: gitlab.Bool(true),
@@ -128,11 +131,19 @@ func (s *Service) fetchOneProjectPage(ctx context.Context, chanSize, page int, p
 
 	for _, p := range projs {
 		select {
-		case projects <- &pkg.Project{
-			ID:   p.ID,
-			Name: strconv.Itoa(p.ID),
-		}:
+		default:
 			s.logger.Printf("fetching project: %d", p.ID)
+
+			if !s.hasContributionsByCurrentUser(ctx, p.ID) {
+				s.logger.Printf("project %d hasn't current user %s contributions", p.ID, s.user.Email)
+
+				continue
+			}
+
+			projects <- &pkg.Project{
+				ID:   p.ID,
+				Name: strconv.Itoa(p.ID),
+			}
 		case <-ctx.Done():
 			return 0, nil
 		}
@@ -145,4 +156,36 @@ func (s *Service) fetchOneProjectPage(ctx context.Context, chanSize, page int, p
 	}
 
 	return resp.NextPage, nil
+}
+
+func (s *Service) hasContributionsByCurrentUser(ctx context.Context, projectID int) bool {
+	opt := &gitlab.ListContributorsOptions{
+		ListOptions: gitlab.ListOptions{
+			PerPage: 50,
+			Page:    1,
+		},
+	}
+
+	for {
+		contrs, resp, err := s.gitlabClient.Repositories.Contributors(projectID, opt, gitlab.WithContext(ctx))
+		if err != nil {
+			s.logger.Printf("failed to get contributors for project %d: %v", projectID, err)
+
+			return false
+		}
+
+		for _, c := range contrs {
+			if strings.EqualFold(c.Email, s.user.Email) {
+				return true
+			}
+		}
+
+		if resp.CurrentPage >= resp.TotalPages {
+			break
+		}
+
+		opt.Page = resp.NextPage
+	}
+
+	return false
 }
