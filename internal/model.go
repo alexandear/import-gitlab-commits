@@ -5,8 +5,8 @@ import (
 )
 
 type Project struct {
-	ID   int
-	Name string
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 type Commit struct {
