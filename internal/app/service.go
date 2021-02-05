@@ -83,50 +83,12 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL) (*App, 
 }
 
 func (a *App) Run(ctx context.Context) error {
-	lastProject, err := a.storage.LastProject()
-	if err != nil {
-		return fmt.Errorf("failed to get last project: %w", err)
+	if err := a.fetchAndStoreProjects(ctx); err != nil {
+		return fmt.Errorf("failed to get fetch and store projects: %w", err)
 	}
 
-	a.logger.Printf("last saved project is %d", lastProject.ID)
-
-	projects := a.fetcher.FetchProjects(ctx, lastProject.ID)
-
-	const workers = 5
-
-	var wg sync.WaitGroup
-
-	wg.Add(workers)
-
-	for i := 0; i < workers; i++ {
-		go func() {
-			a.storeProjects(ctx, projects)
-
-			wg.Done()
-		}()
-	}
-
-	wg.Wait()
-
-	for project := range a.storage.NextProject() {
-		var since time.Time
-
-		last, errLast := a.storage.LastCommit(project.ID)
-		if errLast == nil {
-			a.logger.Printf("last saved commit for project %d is %s", project.ID, last.CommittedAt)
-
-			since = last.CommittedAt
-		} else {
-			a.logger.Printf("failed to get last commit: %v", errLast)
-		}
-
-		for commit := range a.fetcher.FetchCommits(ctx, project.ID, since) {
-			a.logger.Printf("adding commit %v for project %d", commit, project.ID)
-
-			if errAdd := a.storage.AddCommit(project.ID, commit); errAdd != nil {
-				a.logger.Printf("failed to add commit %v: %v", commit, errAdd)
-			}
-		}
+	if err := a.fetchAndStoreCommits(ctx); err != nil {
+		return fmt.Errorf("failed to get fetch and store commits: %w", err)
 	}
 
 	a.logger.Println("init repo in memory")
@@ -195,6 +157,35 @@ func (a *App) Run(ctx context.Context) error {
 	return nil
 }
 
+func (a *App) fetchAndStoreProjects(ctx context.Context) error {
+	lastProject, err := a.storage.LastProject()
+	if err != nil {
+		return fmt.Errorf("failed to get last project: %w", err)
+	}
+
+	a.logger.Printf("last saved project is %d", lastProject.ID)
+
+	projects := a.fetcher.FetchProjects(ctx, lastProject.ID)
+
+	const workers = 5
+
+	var wg sync.WaitGroup
+
+	wg.Add(workers)
+
+	for i := 0; i < workers; i++ {
+		go func() {
+			a.storeProjects(ctx, projects)
+
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	return nil
+}
+
 func (a *App) storeProjects(ctx context.Context, projects <-chan *pkg.Project) {
 	for project := range projects {
 		select {
@@ -208,6 +199,53 @@ func (a *App) storeProjects(ctx context.Context, projects <-chan *pkg.Project) {
 			a.logger.Printf("save projects done")
 
 			return
+		}
+	}
+}
+
+func (a *App) fetchAndStoreCommits(ctx context.Context) error {
+	projects := a.storage.NextProject()
+
+	const workers = 5
+
+	var wg sync.WaitGroup
+
+	wg.Add(workers)
+
+	for i := 0; i < workers; i++ {
+		go func() {
+			a.storeCommits(ctx, projects)
+
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	return nil
+}
+
+func (a *App) storeCommits(ctx context.Context, projects chan *pkg.Project) {
+	project := <-projects
+
+	a.logger.Printf("storing commits for project %d", project.ID)
+
+	var since time.Time
+
+	last, errLast := a.storage.LastCommit(project.ID)
+	if errLast == nil {
+		a.logger.Printf("last saved commit for project %d is %s", project.ID, last.CommittedAt)
+
+		since = last.CommittedAt
+	} else {
+		a.logger.Printf("failed to get last commit: %v", errLast)
+	}
+
+	for commit := range a.fetcher.FetchCommits(ctx, project.ID, since) {
+		a.logger.Printf("adding commit %v for project %d", commit, project.ID)
+
+		if errAdd := a.storage.AddCommit(project.ID, commit); errAdd != nil {
+			a.logger.Printf("failed to add commit %v: %v", commit, errAdd)
 		}
 	}
 }
