@@ -10,11 +10,8 @@ type Project struct {
 }
 
 type Commit struct {
-	// When is commit date.
-	When time.Time `json:"when"`
-
-	// Commit message.
-	Message string `json:"message"`
+	CommittedAt time.Time `json:"committed"`
+	Message     string    `json:"message"`
 }
 
 type User struct {

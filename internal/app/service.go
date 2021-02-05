@@ -30,11 +30,12 @@ const (
 
 type Fetcher interface {
 	FetchProjects(ctx context.Context, idAfter int) <-chan *pkg.Project
-	FetchCommits(ctx context.Context, projectID int) chan *pkg.Commit
+	FetchCommits(ctx context.Context, projectID int, since time.Time) chan *pkg.Commit
 }
 
 type Storage interface {
 	AddCommit(projectID int, commit *pkg.Commit) error
+	LastCommit(projectID int) (*pkg.Commit, error)
 	NextCommit(projectID int) chan *pkg.Commit
 	AddProject(project *pkg.Project) error
 	NextProject() chan *pkg.Project
@@ -107,6 +108,27 @@ func (a *App) Run(ctx context.Context) error {
 
 	wg.Wait()
 
+	for project := range a.storage.NextProject() {
+		var since time.Time
+
+		last, errLast := a.storage.LastCommit(project.ID)
+		if errLast == nil {
+			a.logger.Printf("last saved commit for project %d is %s", project.ID, last.CommittedAt)
+
+			since = last.CommittedAt
+		} else {
+			a.logger.Printf("failed to get last commit: %v", errLast)
+		}
+
+		for commit := range a.fetcher.FetchCommits(ctx, project.ID, since) {
+			a.logger.Printf("adding commit %v for project %d", commit, project.ID)
+
+			if errAdd := a.storage.AddCommit(project.ID, commit); errAdd != nil {
+				a.logger.Printf("failed to add commit %v: %v", commit, errAdd)
+			}
+		}
+	}
+
 	a.logger.Println("init repo in memory")
 
 	fs := memfs.New()
@@ -121,17 +143,6 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	project := &pkg.Project{
-		ID:   277,
-		Name: "277",
-	}
-
-	for commit := range a.fetcher.FetchCommits(ctx, project.ID) {
-		if errAdd := a.storage.AddCommit(project.ID, commit); errAdd != nil {
-			a.logger.Printf("failed to add commit %v: %v", commit, errAdd)
-		}
-	}
-
 	committer := &object.Signature{
 		Name:  "Oleksandr Redko",
 		Email: "oleksandr.red+github@gmail.com",
@@ -139,8 +150,13 @@ func (a *App) Run(ctx context.Context) error {
 
 	i := 0
 
+	project := &pkg.Project{
+		ID:   277,
+		Name: "277",
+	}
+
 	for commit := range a.storage.NextCommit(project.ID) {
-		committer.When = commit.When
+		committer.When = commit.CommittedAt
 
 		h, cerr := w.Commit(commit.Message, &git.CommitOptions{
 			Author:    committer,

@@ -27,10 +27,14 @@ func New(logger *log.Logger, gitlabClient *gitlab.Client, user *pkg.User) *Servi
 	}
 }
 
-func (s *Service) FetchCommits(ctx context.Context, projectID int) chan *pkg.Commit {
+func (s *Service) FetchCommits(ctx context.Context, projectID int, since time.Time) chan *pkg.Commit {
 	const chanSize = 100
 
 	commits := make(chan *pkg.Commit, chanSize)
+
+	if since.IsZero() {
+		since = s.user.CreatedAt
+	}
 
 	go func() {
 		defer close(commits)
@@ -39,13 +43,13 @@ func (s *Service) FetchCommits(ctx context.Context, projectID int) chan *pkg.Com
 		for page > 0 {
 			select {
 			case <-ctx.Done():
-				s.logger.Printf("fetching canceled")
+				s.logger.Printf("fetching commits canceled")
 
 				return
 			default:
 			}
 
-			nextPage, err := s.fetchCommitPage(ctx, page, chanSize, projectID, commits)
+			nextPage, err := s.fetchCommitPage(ctx, page, chanSize, since, projectID, commits)
 			if err != nil {
 				s.logger.Printf("failed to fetch one commit page: %v", err)
 
@@ -59,8 +63,8 @@ func (s *Service) FetchCommits(ctx context.Context, projectID int) chan *pkg.Com
 	return commits
 }
 
-func (s *Service) fetchCommitPage(ctx context.Context, page, perPage int, projectID int, commits chan<- *pkg.Commit,
-) (nextPage int, err error) {
+func (s *Service) fetchCommitPage(ctx context.Context, page, perPage int, since time.Time, projectID int,
+	commits chan<- *pkg.Commit) (nextPage int, err error) {
 	ctxOne, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -69,7 +73,8 @@ func (s *Service) fetchCommitPage(ctx context.Context, page, perPage int, projec
 			PerPage: perPage,
 			Page:    page,
 		},
-		Since: &s.user.CreatedAt,
+		Since: gitlab.Time(since),
+		All:   gitlab.Bool(true),
 	}
 
 	comms, resp, err := s.gitlabClient.Commits.ListCommits(projectID, opt, gitlab.WithContext(ctxOne))
@@ -89,8 +94,8 @@ func (s *Service) fetchCommitPage(ctx context.Context, page, perPage int, projec
 			}
 
 			commits <- &pkg.Commit{
-				When:    *c.CommittedDate,
-				Message: c.CommittedDate.Format(time.RFC3339),
+				CommittedAt: *c.CommittedDate,
+				Message:     c.CommittedDate.Format(time.RFC3339),
 			}
 		case <-ctx.Done():
 			return 0, nil
@@ -116,7 +121,7 @@ func (s *Service) FetchProjects(ctx context.Context, idAfter int) <-chan *pkg.Pr
 		for page > 0 {
 			select {
 			case <-ctx.Done():
-				s.logger.Printf("fetching canceled")
+				s.logger.Printf("fetching projects canceled")
 
 				return
 			default:

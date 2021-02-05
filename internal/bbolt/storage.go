@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/go-git/go-git/v5/utils/binary"
 	"go.etcd.io/bbolt"
@@ -28,7 +27,10 @@ func New(db *bbolt.DB) *Storage {
 }
 
 func (s *Storage) AddCommit(projectID int, commit *pkg.Commit) error {
-	key := []byte(commit.When.Format(time.RFC3339))
+	key, err := intToBytes(int(commit.CommittedAt.Unix()))
+	if err != nil {
+		return fmt.Errorf("failed to convert committed at to bytes: %w", err)
+	}
 
 	pb, err := intToBytes(projectID)
 	if err != nil {
@@ -98,6 +100,43 @@ func (s *Storage) NextCommit(projectID int) chan *pkg.Commit {
 	}()
 
 	return commits
+}
+
+func (s *Storage) LastCommit(projectID int) (*pkg.Commit, error) {
+	bucket, err := intToBytes(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert project id to bytes: %w", err)
+	}
+
+	commit := &pkg.Commit{}
+
+	if err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucket)
+
+		if b == nil {
+			return nil
+		}
+
+		cur := b.Cursor()
+		if cur == nil {
+			return nil
+		}
+
+		k, v := cur.Last()
+		if k == nil {
+			return nil
+		}
+
+		if err := json.Unmarshal(v, commit); err != nil {
+			return fmt.Errorf("failed to unmarshal commit %v: %w", v, err)
+		}
+
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("failed to view commits: %w", err)
+	}
+
+	return commit, nil
 }
 
 func (s *Storage) AddProject(project *pkg.Project) error {
