@@ -16,18 +16,16 @@ import (
 func TestService_FetchProjects(t *testing.T) {
 	git := initGit(t)
 
-	s, err := New(log.New(newTestWriter(t), "", log.Lshortfile|log.Ltime), git, newCurrentUser(t, git))
-	require.NoError(t, err)
+	s := New(log.New(newTestWriter(t), "", log.Lshortfile|log.Ltime), git, newCurrentUser(t, git))
 
-	for p := range s.FetchProjects(context.Background()) {
+	for p := range s.FetchProjects(context.Background(), 0) {
 		t.Log(p)
 	}
 }
 
 func TestService_hasContributionsByUser(t *testing.T) {
 	git := initGit(t)
-	s, err := New(log.New(newTestWriter(t), "", log.Lshortfile|log.Ltime), git, newCurrentUser(t, git))
-	require.NoError(t, err)
+	s := New(log.New(newTestWriter(t), "", log.Lshortfile|log.Ltime), git, newCurrentUser(t, git))
 
 	assert.False(t, s.hasContributionsByCurrentUser(context.Background(), 3))
 	assert.True(t, s.hasContributionsByCurrentUser(context.Background(), 575))
