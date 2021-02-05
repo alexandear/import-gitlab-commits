@@ -33,7 +33,17 @@ func Execute(logger *log.Logger) error {
 		return fmt.Errorf("wrong GITLAB_BASE_URL value: %w", err)
 	}
 
-	a, err := app.New(logger, token, baseURL)
+	committerName := os.Getenv("COMMITTER_NAME")
+	if committerName == "" {
+		return NewErrInvalidArgument("empty COMMITTER_NAME")
+	}
+
+	committerEmail := os.Getenv("COMMITTER_EMAIL")
+	if committerEmail == "" {
+		return NewErrInvalidArgument("empty COMMITTER_EMAIL")
+	}
+
+	a, err := app.New(logger, token, baseURL, committerName, committerEmail)
 	if err != nil {
 		return fmt.Errorf("failed to create app: %w", err)
 	}

@@ -12,10 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/xanzy/go-gitlab"
 	"go.etcd.io/bbolt"
 
@@ -46,9 +44,14 @@ type App struct {
 	logger  *log.Logger
 	fetcher Fetcher
 	storage Storage
+
+	gitlabBaseURL *url.URL
+	currentUser   *pkg.User
+	committer     *pkg.Committer
 }
 
-func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL) (*App, error) {
+func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committerName, committerEmail string,
+) (*App, error) {
 	gitlabClient, err := gitlab.NewClient(gitlabToken, gitlab.WithBaseURL(gitlabBaseURL.String()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GitLab client: %w", err)
@@ -65,7 +68,7 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL) (*App, 
 
 	const createIfNotExist = os.FileMode(0o600)
 
-	dbName := dbName(gitlabBaseURL, currentUser)
+	dbName := objectName(gitlabBaseURL, currentUser) + ".db"
 
 	db, err := bbolt.Open(dbName, createIfNotExist, &bbolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
@@ -74,9 +77,15 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL) (*App, 
 
 	f := fetcher.New(logger, gitlabClient, currentUser)
 	a := &App{
-		logger:  logger,
-		fetcher: f,
-		storage: bboltS.New(db),
+		logger:        logger,
+		fetcher:       f,
+		storage:       bboltS.New(db),
+		gitlabBaseURL: gitlabBaseURL,
+		currentUser:   currentUser,
+		committer: &pkg.Committer{
+			Name:  committerName,
+			Email: committerEmail,
+		},
 	}
 
 	return a, nil
@@ -89,11 +98,9 @@ func (a *App) Run(ctx context.Context) error {
 
 	a.fetchAndStoreCommits(ctx)
 
-	a.logger.Println("init repo in memory")
+	repoPath := "./" + objectName(a.gitlabBaseURL, a.currentUser)
 
-	fs := memfs.New()
-
-	r, err := git.Init(memory.NewStorage(), fs)
+	r, err := git.PlainInit(repoPath, false)
 	if err != nil {
 		return fmt.Errorf("failed to init: %w", err)
 	}
@@ -104,34 +111,29 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	committer := &object.Signature{
-		Name:  "Oleksandr Redko",
-		Email: "oleksandr.red+github@gmail.com",
+		Name:  a.committer.Name,
+		Email: a.committer.Email,
 	}
 
-	i := 0
+	commitCounter := 0
 
-	project := &pkg.Project{
-		ID:   277,
-		Name: "277",
-	}
+	for project := range a.storage.NextProject() {
+		for commit := range a.storage.NextCommit(project.ID) {
+			committer.When = commit.CommittedAt
 
-	for commit := range a.storage.NextCommit(project.ID) {
-		committer.When = commit.CommittedAt
+			h, cerr := w.Commit(commit.Message, &git.CommitOptions{
+				Author:    committer,
+				Committer: committer,
+			})
+			if cerr != nil {
+				return fmt.Errorf("failed to commit: %w", cerr)
+			}
 
-		h, cerr := w.Commit(commit.Message, &git.CommitOptions{
-			Author:    committer,
-			Committer: committer,
-		})
-		if cerr != nil {
-			return fmt.Errorf("failed to commit: %w", cerr)
+			log.Printf("committed %d %s", commitCounter, h)
+
+			commitCounter++
 		}
-
-		log.Println("committed", i, h)
-
-		i++
 	}
-
-	a.logger.Println("log")
 
 	ci, err := r.Log(&git.LogOptions{})
 	if err != nil {
@@ -151,6 +153,8 @@ func (a *App) Run(ctx context.Context) error {
 		a.logger.Printf("commit %s\nAuthor: %s\nAuthor date: %s\nCommitter: %s\nCommit date: %s\n   %s\n\n",
 			c.Hash, c.Author.Name, c.Author.When, c.Committer.Name, c.Committer.When, c.Message)
 	}
+
+	a.logger.Printf("commits total: %d", commitCounter)
 
 	return nil
 }
@@ -260,7 +264,8 @@ func newCurrentUser(ctx context.Context, gitlabClient *gitlab.Client) (*pkg.User
 	}, nil
 }
 
-func dbName(baseURL *url.URL, user *pkg.User) string {
+// objectName used to generate unique db and repo names for the user.
+func objectName(baseURL *url.URL, user *pkg.User) string {
 	host := baseURL.Host
 
 	hostPort := strings.Split(host, ":")
@@ -268,5 +273,5 @@ func dbName(baseURL *url.URL, user *pkg.User) string {
 		host = hostPort[0]
 	}
 
-	return host + "." + user.Username + ".db"
+	return host + "." + user.Username
 }

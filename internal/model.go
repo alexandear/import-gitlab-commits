@@ -20,3 +20,8 @@ type User struct {
 	Username  string
 	CreatedAt time.Time
 }
+
+type Committer struct {
+	Name  string
+	Email string
+}
