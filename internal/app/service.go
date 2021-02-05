@@ -87,9 +87,7 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to get fetch and store projects: %w", err)
 	}
 
-	if err := a.fetchAndStoreCommits(ctx); err != nil {
-		return fmt.Errorf("failed to get fetch and store commits: %w", err)
-	}
+	a.fetchAndStoreCommits(ctx)
 
 	a.logger.Println("init repo in memory")
 
@@ -203,7 +201,7 @@ func (a *App) storeProjects(ctx context.Context, projects <-chan *pkg.Project) {
 	}
 }
 
-func (a *App) fetchAndStoreCommits(ctx context.Context) error {
+func (a *App) fetchAndStoreCommits(ctx context.Context) {
 	projects := a.storage.NextProject()
 
 	const workers = 5
@@ -221,8 +219,6 @@ func (a *App) fetchAndStoreCommits(ctx context.Context) error {
 	}
 
 	wg.Wait()
-
-	return nil
 }
 
 func (a *App) storeCommits(ctx context.Context, projects chan *pkg.Project) {
