@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	pkg "github.com/alexandear/import-gitlab-contribs/internal"
-	"github.com/alexandear/import-gitlab-contribs/internal/app"
+	pkg "github.com/alexandear/import-gitlab-commits/internal"
+	"github.com/alexandear/import-gitlab-commits/internal/app"
 )
 
 const (

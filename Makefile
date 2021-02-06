@@ -16,7 +16,7 @@ clean:
 .PHONY: build
 build:
 	@echo build
-	@go build -o $(GOBIN)/fake-private-contributions
+	@go build -o $(GOBIN)/import-gitlab-commits
 
 .PHONY: test
 test:

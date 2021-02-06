@@ -1,4 +1,4 @@
-module github.com/alexandear/import-gitlab-contribs
+module github.com/alexandear/import-gitlab-commits
 
 go 1.15
 

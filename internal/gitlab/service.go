@@ -9,7 +9,7 @@ import (
 
 	"github.com/xanzy/go-gitlab"
 
-	pkg "github.com/alexandear/import-gitlab-contribs/internal"
+	pkg "github.com/alexandear/import-gitlab-commits/internal"
 )
 
 const (
