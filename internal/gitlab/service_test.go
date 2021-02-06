@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
 
-	pkg "github.com/alexandear/fake-private-contributions/internal"
+	pkg "github.com/alexandear/import-gitlab-contribs/internal"
 )
 
 func TestService_hasContributionsByUser(t *testing.T) {

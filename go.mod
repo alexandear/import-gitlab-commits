@@ -1,4 +1,4 @@
-module github.com/alexandear/fake-private-contributions
+module github.com/alexandear/import-gitlab-contribs
 
 go 1.15
 

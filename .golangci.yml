@@ -26,7 +26,7 @@ linters-settings:
     enabled-tags:
       - experimental
   gci:
-    local-prefixes: github.com/alexandear/fake-private-contributions
+    local-prefixes: github.com/alexandear/import-gitlab-contribs
 
 linters:
   enable-all: true

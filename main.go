@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/alexandear/fake-private-contributions/cmd"
+	"github.com/alexandear/import-gitlab-contribs/cmd"
 )
 
 func main() {

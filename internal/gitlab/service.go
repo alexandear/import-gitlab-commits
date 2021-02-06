@@ -9,7 +9,7 @@ import (
 
 	"github.com/xanzy/go-gitlab"
 
-	pkg "github.com/alexandear/fake-private-contributions/internal"
+	pkg "github.com/alexandear/import-gitlab-contribs/internal"
 )
 
 const (

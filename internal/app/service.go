@@ -14,8 +14,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	goGitlab "github.com/xanzy/go-gitlab"
 
-	pkg "github.com/alexandear/fake-private-contributions/internal"
-	"github.com/alexandear/fake-private-contributions/internal/gitlab"
+	pkg "github.com/alexandear/import-gitlab-contribs/internal"
+	"github.com/alexandear/import-gitlab-contribs/internal/gitlab"
 )
 
 const (
