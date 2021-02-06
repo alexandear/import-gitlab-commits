@@ -39,7 +39,7 @@ func Execute(logger *log.Logger) error {
 
 	a, err := app.New(logger, token, baseURL, committerName, committerEmail)
 	if err != nil {
-		return fmt.Errorf("failed to create app: %w", err)
+		return fmt.Errorf("create app: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), runTimeout)

@@ -32,7 +32,7 @@ func New(logger *log.Logger, gitlabClient *gitlab.Client) *Service {
 func (s *Service) CurrentUser(ctx context.Context) (*pkg.User, error) {
 	u, _, err := s.gitlabClient.Users.CurrentUser(gitlab.WithContext(ctx))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get current user: %w", err)
+		return nil, fmt.Errorf("get current user: %w", err)
 	}
 
 	return &pkg.User{
@@ -63,7 +63,7 @@ func (s *Service) FetchProjectPage(ctx context.Context, page int, user *pkg.User
 
 	projs, resp, err := s.gitlabClient.Projects.ListProjects(opt, gitlab.WithContext(ctx))
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to list projects: %w", err)
+		return nil, 0, fmt.Errorf("list projects: %w", err)
 	}
 
 	for _, p := range projs {
@@ -96,7 +96,7 @@ func (s *Service) hasUserContributions(ctx context.Context, user *pkg.User, proj
 	for {
 		contrs, resp, err := s.gitlabClient.Repositories.Contributors(projectID, opt, gitlab.WithContext(ctx))
 		if err != nil {
-			s.logger.Printf("failed to get contributors for project %d: %v", projectID, err)
+			s.logger.Printf("get contributors for project %d: %v", projectID, err)
 
 			return false
 		}
@@ -129,7 +129,7 @@ func (s *Service) FetchCommits(ctx context.Context, user *pkg.User, projectID in
 	for page > 0 {
 		cms, nextPage, err := s.fetchCommitPage(ctx, user, page, 100, since, projectID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch one commit page: %w", err)
+			return nil, fmt.Errorf("fetch one commit page: %w", err)
 		}
 
 		commits = append(commits, cms...)
@@ -159,7 +159,7 @@ func (s *Service) fetchCommitPage(ctx context.Context, user *pkg.User, page, per
 
 	comms, resp, err := s.gitlabClient.Commits.ListCommits(projectID, opt, gitlab.WithContext(ctx))
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get commits for project %d: %w", projectID, err)
+		return nil, 0, fmt.Errorf("get commits for project %d: %w", projectID, err)
 	}
 
 	for _, c := range comms {

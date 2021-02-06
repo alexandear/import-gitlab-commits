@@ -42,7 +42,7 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committ
 ) (*App, error) {
 	gitlabClient, err := goGitlab.NewClient(gitlabToken, goGitlab.WithBaseURL(gitlabBaseURL.String()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create GitLab client: %w", err)
+		return nil, fmt.Errorf("create GitLab client: %w", err)
 	}
 
 	f := gitlab.New(logger, gitlabClient)
@@ -65,7 +65,7 @@ func (a *App) Run(ctx context.Context) error {
 
 	currentUser, err := a.gitlab.CurrentUser(ctxCurrent)
 	if err != nil {
-		return fmt.Errorf("failed to get current user: %w", err)
+		return fmt.Errorf("get current user: %w", err)
 	}
 
 	repoPath := "./" + repoName(a.gitlabBaseURL, currentUser)
@@ -74,15 +74,15 @@ func (a *App) Run(ctx context.Context) error {
 	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
 		r, err = git.PlainOpen(repoPath)
 		if err != nil {
-			return fmt.Errorf("failed to open: %w", err)
+			return fmt.Errorf("open: %w", err)
 		}
 	} else if err != nil {
-		return fmt.Errorf("failed to init: %w", err)
+		return fmt.Errorf("init: %w", err)
 	}
 
 	w, err := r.Worktree()
 	if err != nil {
-		return fmt.Errorf("failed to get worktree: %w", err)
+		return fmt.Errorf("get worktree: %w", err)
 	}
 
 	var (
@@ -94,19 +94,19 @@ func (a *App) Run(ctx context.Context) error {
 	case errHead == nil:
 		headCommit, errCommit := r.CommitObject(head.Hash())
 		if errCommit != nil {
-			return fmt.Errorf("failed to get head commit: %w", errCommit)
+			return fmt.Errorf("get head commit: %w", errCommit)
 		}
 
 		id, _, errParse := pkg.ParseCommitMessage(headCommit.Message)
 		if errParse != nil {
-			return fmt.Errorf("failed to parse commit message: %w", errParse)
+			return fmt.Errorf("parse commit message: %w", errParse)
 		}
 
 		lastProjectID = id
 		lastCommitDate = headCommit.Committer.When
 	case errors.Is(errHead, plumbing.ErrReferenceNotFound):
 	default:
-		return fmt.Errorf("failed to get head: %w", errHead)
+		return fmt.Errorf("get head: %w", errHead)
 	}
 
 	projectCounter := 0
@@ -116,7 +116,7 @@ func (a *App) Run(ctx context.Context) error {
 	for page > 0 {
 		projects, nextPage, errFetch := a.gitlab.FetchProjectPage(ctx, page, currentUser, lastProjectID)
 		if errFetch != nil {
-			return fmt.Errorf("failed to fetch projects: %w", errFetch)
+			return fmt.Errorf("fetch projects: %w", errFetch)
 		}
 
 		projectCounter += len(projects)
@@ -124,7 +124,7 @@ func (a *App) Run(ctx context.Context) error {
 		for _, project := range projects {
 			commits, errCommit := a.doCommitsForProject(ctx, w, currentUser, project, lastCommitDate)
 			if errCommit != nil {
-				return fmt.Errorf("failed to do commits: %w", errCommit)
+				return fmt.Errorf("do commits: %w", errCommit)
 			}
 
 			commitCounter += commits
@@ -142,7 +142,7 @@ func (a *App) doCommitsForProject(ctx context.Context, w *git.Worktree, currentU
 	lastCommitDate time.Time) (int, error) {
 	commits, err := a.gitlab.FetchCommits(ctx, currentUser, project.ID, lastCommitDate)
 	if err != nil {
-		return 0, fmt.Errorf("failed to fetch commits: %w", err)
+		return 0, fmt.Errorf("fetch commits: %w", err)
 	}
 
 	a.logger.Printf("fetched %d commits for project %d", len(commits), project.ID)
@@ -161,7 +161,7 @@ func (a *App) doCommitsForProject(ctx context.Context, w *git.Worktree, currentU
 			Author:    committer,
 			Committer: committer,
 		}); errCommit != nil {
-			return commitCounter, fmt.Errorf("failed to commit: %w", errCommit)
+			return commitCounter, fmt.Errorf("commit: %w", errCommit)
 		}
 
 		commitCounter++
