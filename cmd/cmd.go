@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	runTimeout = 2 * time.Minute
+	runTimeout = 10 * time.Minute
 )
 
 func Execute(logger *log.Logger) error {

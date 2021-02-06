@@ -12,6 +12,10 @@ import (
 	pkg "github.com/alexandear/fake-private-contributions/internal"
 )
 
+const (
+	maxCommits = 1000
+)
+
 type Service struct {
 	logger *log.Logger
 
@@ -39,41 +43,12 @@ func (s *Service) CurrentUser(ctx context.Context) (*pkg.User, error) {
 	}, nil
 }
 
-func (s *Service) FetchProjects(ctx context.Context, user *pkg.User, idAfter int) <-chan *pkg.Project {
-	const chanSize = 100
+func (s *Service) FetchProjectPage(ctx context.Context, page int, user *pkg.User, idAfter int,
+) (projects []*pkg.Project, nextPage int, err error) {
+	const perPage = 100
 
-	projects := make(chan *pkg.Project, chanSize)
+	projects = make([]*pkg.Project, 0, perPage)
 
-	go func() {
-		defer close(projects)
-
-		page := 1
-		for page > 0 {
-			select {
-			case <-ctx.Done():
-				s.logger.Printf("fetching projects canceled")
-
-				return
-			default:
-			}
-
-			nextPage, err := s.fetchProjectPage(ctx, user, page, chanSize, idAfter, projects)
-			if err != nil {
-				s.logger.Printf("failed to fetch one project page: %v", err)
-
-				return
-			}
-
-			page = nextPage
-		}
-	}()
-
-	return projects
-}
-
-func (s *Service) fetchProjectPage(ctx context.Context, user *pkg.User, page, perPage, idAfter int,
-	projects chan<- *pkg.Project,
-) (nextPage int, err error) {
 	opt := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
 			Page:    page,
@@ -88,29 +63,24 @@ func (s *Service) fetchProjectPage(ctx context.Context, user *pkg.User, page, pe
 
 	projs, resp, err := s.gitlabClient.Projects.ListProjects(opt, gitlab.WithContext(ctx))
 	if err != nil {
-		return 0, fmt.Errorf("failed to list projects: %w", err)
+		return nil, 0, fmt.Errorf("failed to list projects: %w", err)
 	}
 
 	for _, p := range projs {
-		select {
-		default:
-			if !s.hasUserContributions(ctx, user, p.ID) {
-				continue
-			}
-
-			s.logger.Printf("fetching project: %d", p.ID)
-
-			projects <- &pkg.Project{ID: p.ID}
-		case <-ctx.Done():
-			return 0, nil
+		if !s.hasUserContributions(ctx, user, p.ID) {
+			continue
 		}
+
+		s.logger.Printf("fetching project: %d", p.ID)
+
+		projects = append(projects, &pkg.Project{ID: p.ID})
 	}
 
 	if resp.CurrentPage >= resp.TotalPages {
-		return 0, nil
+		return projects, 0, nil
 	}
 
-	return resp.NextPage, nil
+	return projects, resp.NextPage, nil
 }
 
 func (s *Service) hasUserContributions(ctx context.Context, user *pkg.User, projectID int) bool {
@@ -147,44 +117,37 @@ func (s *Service) hasUserContributions(ctx context.Context, user *pkg.User, proj
 	return false
 }
 
-func (s *Service) FetchCommits(ctx context.Context, user *pkg.User, projectID int, since time.Time) chan *pkg.Commit {
-	const chanSize = 100
-
-	commits := make(chan *pkg.Commit, chanSize)
+func (s *Service) FetchCommits(ctx context.Context, user *pkg.User, projectID int, since time.Time,
+) ([]*pkg.Commit, error) {
+	commits := make([]*pkg.Commit, 0, maxCommits)
 
 	if since.IsZero() {
 		since = user.CreatedAt
 	}
 
-	go func() {
-		defer close(commits)
-
-		page := 1
-		for page > 0 {
-			select {
-			case <-ctx.Done():
-				s.logger.Printf("fetching commits canceled")
-
-				return
-			default:
-			}
-
-			nextPage, err := s.fetchCommitPage(ctx, user, page, chanSize, since, projectID, commits)
-			if err != nil {
-				s.logger.Printf("failed to fetch one commit page: %v", err)
-
-				return
-			}
-
-			page = nextPage
+	page := 1
+	for page > 0 {
+		cms, nextPage, err := s.fetchCommitPage(ctx, user, page, 100, since, projectID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch one commit page: %w", err)
 		}
-	}()
 
-	return commits
+		commits = append(commits, cms...)
+		page = nextPage
+	}
+
+	// reverse slice
+	for i, j := 0, len(commits)-1; i < j; i, j = i+1, j-1 {
+		commits[i], commits[j] = commits[j], commits[i]
+	}
+
+	return commits, nil
 }
 
 func (s *Service) fetchCommitPage(ctx context.Context, user *pkg.User, page, perPage int, since time.Time,
-	projectID int, commits chan<- *pkg.Commit) (nextPage int, err error) {
+	projectID int) (commits []*pkg.Commit, nextPage int, err error) {
+	commits = make([]*pkg.Commit, 0, perPage)
+
 	opt := &gitlab.ListCommitsOptions{
 		ListOptions: gitlab.ListOptions{
 			PerPage: perPage,
@@ -196,27 +159,22 @@ func (s *Service) fetchCommitPage(ctx context.Context, user *pkg.User, page, per
 
 	comms, resp, err := s.gitlabClient.Commits.ListCommits(projectID, opt, gitlab.WithContext(ctx))
 	if err != nil {
-		return 0, fmt.Errorf("failed to get commits for project %d: %w", projectID, err)
+		return nil, 0, fmt.Errorf("failed to get commits for project %d: %w", projectID, err)
 	}
 
 	for _, c := range comms {
-		select {
-		default:
-			if !strings.EqualFold(c.AuthorEmail, user.Email) || !strings.EqualFold(c.CommitterEmail, user.Email) {
-				continue
-			}
-
-			s.logger.Printf("fetching commit: %s %s", c.ShortID, c.CommittedDate)
-
-			commits <- pkg.NewCommit(*c.CommittedDate, projectID, c.ID)
-		case <-ctx.Done():
-			return 0, nil
+		if !strings.EqualFold(c.AuthorEmail, user.Email) || !strings.EqualFold(c.CommitterEmail, user.Email) {
+			continue
 		}
+
+		s.logger.Printf("fetching commit: %s %s", c.ShortID, c.CommittedDate)
+
+		commits = append(commits, pkg.NewCommit(*c.CommittedDate, projectID, c.ID))
 	}
 
 	if resp.CurrentPage >= resp.TotalPages {
-		return 0, nil
+		return commits, 0, nil
 	}
 
-	return resp.NextPage, nil
+	return commits, resp.NextPage, nil
 }

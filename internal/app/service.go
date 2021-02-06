@@ -24,8 +24,9 @@ const (
 
 type Gitlab interface {
 	CurrentUser(ctx context.Context) (*pkg.User, error)
-	FetchProjects(ctx context.Context, user *pkg.User, idAfter int) <-chan *pkg.Project
-	FetchCommits(ctx context.Context, user *pkg.User, projectID int, since time.Time) chan *pkg.Commit
+	FetchProjectPage(ctx context.Context, page int, user *pkg.User, idAfter int,
+	) (projects []*pkg.Project, nextPage int, err error)
+	FetchCommits(ctx context.Context, user *pkg.User, projectID int, since time.Time) ([]*pkg.Commit, error)
 }
 
 type App struct {
@@ -89,11 +90,11 @@ func (a *App) Run(ctx context.Context) error {
 		lastCommitDate time.Time
 	)
 
-	switch head, err := r.Head(); {
-	case err == nil:
-		headCommit, errHead := r.CommitObject(head.Hash())
-		if errHead != nil {
-			return fmt.Errorf("failed to get head commit: %w", errHead)
+	switch head, errHead := r.Head(); {
+	case errHead == nil:
+		headCommit, errCommit := r.CommitObject(head.Hash())
+		if errCommit != nil {
+			return fmt.Errorf("failed to get head commit: %w", errCommit)
 		}
 
 		id, _, errParse := pkg.ParseCommitMessage(headCommit.Message)
@@ -103,48 +104,70 @@ func (a *App) Run(ctx context.Context) error {
 
 		lastProjectID = id
 		lastCommitDate = headCommit.Committer.When
-	case errors.Is(err, plumbing.ErrReferenceNotFound):
+	case errors.Is(errHead, plumbing.ErrReferenceNotFound):
 	default:
-		return fmt.Errorf("failed to get head: %w", err)
+		return fmt.Errorf("failed to get head: %w", errHead)
 	}
+
+	projectCounter := 0
+	commitCounter := 0
+
+	page := 1
+	for page > 0 {
+		projects, nextPage, errFetch := a.gitlab.FetchProjectPage(ctx, page, currentUser, lastProjectID)
+		if errFetch != nil {
+			return fmt.Errorf("failed to fetch projects: %w", errFetch)
+		}
+
+		projectCounter += len(projects)
+
+		for _, project := range projects {
+			commits, errCommit := a.doCommitsForProject(ctx, w, currentUser, project, lastCommitDate)
+			if errCommit != nil {
+				return fmt.Errorf("failed to do commits: %w", errCommit)
+			}
+
+			commitCounter += commits
+		}
+
+		page = nextPage
+	}
+
+	a.logger.Printf("projects %d, commits %d", projectCounter, commitCounter)
+
+	return nil
+}
+
+func (a *App) doCommitsForProject(ctx context.Context, w *git.Worktree, currentUser *pkg.User, project *pkg.Project,
+	lastCommitDate time.Time) (int, error) {
+	commits, err := a.gitlab.FetchCommits(ctx, currentUser, project.ID, lastCommitDate)
+	if err != nil {
+		return 0, fmt.Errorf("failed to fetch commits: %w", err)
+	}
+
+	a.logger.Printf("fetched %d commits for project %d", len(commits), project.ID)
+
+	var commitCounter int
 
 	committer := &object.Signature{
 		Name:  a.committer.Name,
 		Email: a.committer.Email,
 	}
 
-	projectCounter := 0
-	commitCounter := 0
+	for _, commit := range commits {
+		committer.When = commit.CommittedAt
 
-	for project := range a.gitlab.FetchProjects(ctx, currentUser, lastProjectID) {
-		commits := make([]*pkg.Commit, 0, 1000)
-		for commit := range a.gitlab.FetchCommits(ctx, currentUser, project.ID, lastCommitDate) {
-			commits = append(commits, commit)
+		if _, errCommit := w.Commit(commit.Message, &git.CommitOptions{
+			Author:    committer,
+			Committer: committer,
+		}); errCommit != nil {
+			return commitCounter, fmt.Errorf("failed to commit: %w", errCommit)
 		}
 
-		a.logger.Printf("fetched %d commits for project %d", len(commits), project.ID)
-
-		for i := len(commits) - 1; i >= 0; i-- {
-			commit := commits[i]
-			committer.When = commit.CommittedAt
-
-			_, cerr := w.Commit(commit.Message, &git.CommitOptions{
-				Author:    committer,
-				Committer: committer,
-			})
-			if cerr != nil {
-				return fmt.Errorf("failed to commit: %w", cerr)
-			}
-
-			commitCounter++
-		}
-
-		projectCounter++
+		commitCounter++
 	}
 
-	a.logger.Printf("projects %d, commits %d", projectCounter, commitCounter)
-
-	return nil
+	return commitCounter, nil
 }
 
 // repoName generates unique repo name for the user.
