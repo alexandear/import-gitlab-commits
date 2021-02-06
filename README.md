@@ -8,7 +8,7 @@ The tool to import commits from private GitLab to separate repo. Can be used to 
 
 Install by:
 ```shell
-GO111MODULE=on go get github.com/alexandear/import-gitlab-commits@v0.1.0
+GO111MODULE=on go get github.com/alexandear/import-gitlab-commits
 ```
 
 Run:
