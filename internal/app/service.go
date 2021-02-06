@@ -20,6 +20,8 @@ import (
 
 const (
 	getCurrentUserTimeout = 2 * time.Second
+
+	maxProjects = 1000
 )
 
 type Gitlab interface {
@@ -109,8 +111,7 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("get head: %w", errHead)
 	}
 
-	projectCounter := 0
-	commitCounter := 0
+	projectCommitCounter := make(map[int]int, maxProjects)
 
 	page := 1
 	for page > 0 {
@@ -119,21 +120,21 @@ func (a *App) Run(ctx context.Context) error {
 			return fmt.Errorf("fetch projects: %w", errFetch)
 		}
 
-		projectCounter += len(projects)
-
 		for _, project := range projects {
 			commits, errCommit := a.doCommitsForProject(ctx, w, currentUser, project, lastCommitDate)
 			if errCommit != nil {
 				return fmt.Errorf("do commits: %w", errCommit)
 			}
 
-			commitCounter += commits
+			projectCommitCounter[project.ID] = commits
 		}
 
 		page = nextPage
 	}
 
-	a.logger.Printf("projects %d, commits %d", projectCounter, commitCounter)
+	for project, commit := range projectCommitCounter {
+		a.logger.Printf("project %d: commits %d", project, commit)
+	}
 
 	return nil
 }
