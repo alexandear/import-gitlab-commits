@@ -172,6 +172,12 @@ func (s *Service) fetchCommitPage(ctx context.Context, user *pkg.User, page, per
 		commits = append(commits, pkg.NewCommit(*c.CommittedDate, projectID, c.ID))
 	}
 
+	// For performance reasons, if a query returns more than 10,000 records, GitLab
+	// doesn't return TotalPages
+	if resp.TotalPages == 0 {
+		return commits, resp.NextPage, nil
+	}
+
 	if resp.CurrentPage >= resp.TotalPages {
 		return commits, 0, nil
 	}
