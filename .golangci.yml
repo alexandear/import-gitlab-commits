@@ -32,7 +32,6 @@ linters:
   enable-all: true
   disable:
     - maligned
-    - gomnd
     - exhaustivestruct
     - gosec
     - funlen

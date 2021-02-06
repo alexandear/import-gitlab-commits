@@ -1,10 +1,11 @@
-package fetcher
+package gitlab
 
 import (
 	"context"
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,19 +17,31 @@ import (
 func TestService_FetchProjects(t *testing.T) {
 	git := initGit(t)
 
-	s := New(log.New(newTestWriter(t), "", log.Lshortfile|log.Ltime), git, newCurrentUser(t, git))
+	s := New(log.New(newTestWriter(t), "", log.Lshortfile|log.Ltime), git)
+	user := newCurrentUser(t, git)
 
-	for p := range s.FetchProjects(context.Background(), 0) {
+	for p := range s.FetchProjects(context.Background(), user, 0) {
 		t.Log(p)
 	}
 }
 
 func TestService_hasContributionsByUser(t *testing.T) {
 	git := initGit(t)
-	s := New(log.New(newTestWriter(t), "", log.Lshortfile|log.Ltime), git, newCurrentUser(t, git))
+	s := New(log.New(newTestWriter(t), "", log.Lshortfile|log.Ltime), git)
+	user := newCurrentUser(t, git)
 
-	assert.False(t, s.hasContributionsByCurrentUser(context.Background(), 3))
-	assert.True(t, s.hasContributionsByCurrentUser(context.Background(), 575))
+	assert.False(t, s.hasUserContributions(context.Background(), user, 3))
+	assert.True(t, s.hasUserContributions(context.Background(), user, 575))
+}
+
+func TestService_FetchCommits(t *testing.T) {
+	git := initGit(t)
+	s := New(log.New(newTestWriter(t), "", log.Lshortfile|log.Ltime), git)
+	user := newCurrentUser(t, git)
+
+	for c := range s.FetchCommits(context.Background(), user, 14, time.Time{}) {
+		t.Log(c)
+	}
 }
 
 func initGit(t *testing.T) *gitlab.Client {
@@ -65,7 +78,8 @@ func newCurrentUser(t *testing.T, gitlabClient *gitlab.Client) *pkg.User {
 	require.NoError(t, err)
 
 	return &pkg.User{
-		Name:  u.Name,
-		Email: u.Email,
+		Name:      u.Name,
+		Email:     u.Email,
+		CreatedAt: *u.CreatedAt,
 	}
 }

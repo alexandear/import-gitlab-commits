@@ -1,17 +1,49 @@
 package pkg
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 )
 
 type Project struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID int
 }
 
 type Commit struct {
-	CommittedAt time.Time `json:"committed"`
-	Message     string    `json:"message"`
+	CommittedAt time.Time
+	Message     string
+}
+
+func NewCommit(committedAt time.Time, projectID int, hash string) *Commit {
+	return &Commit{
+		CommittedAt: committedAt,
+		Message:     CommitMessage(projectID, hash),
+	}
+}
+
+func CommitMessage(projectID int, hash string) string {
+	return fmt.Sprintf("Project: %d commit: %s", projectID, hash)
+}
+
+func ParseCommitMessage(message string) (projectID int, hash string, err error) {
+	const messagePartsCount = 4
+
+	messageParts := strings.Split(message, " ")
+	if len(messageParts) < messagePartsCount {
+		return 0, "", NewErrInvalidArgument(fmt.Sprintf("wrong commit message: %s", message))
+	}
+
+	id, errAtoi := strconv.Atoi(messageParts[1])
+	if errAtoi != nil {
+		return 0, "", fmt.Errorf("failled to convert %s to project id: %w", messageParts[1], errAtoi)
+	}
+
+	projectID = id
+	hash = messageParts[2]
+
+	return projectID, hash, nil
 }
 
 type User struct {
