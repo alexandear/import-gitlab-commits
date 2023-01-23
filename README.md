@@ -4,14 +4,13 @@ The tool to import commits from private GitLab to separate repo. Can be used to 
 
 # Getting Started
 
-> Prerequisites: go 1.15 must be installed.
-
-Install by:
+1. Download and install [Go 1.19](https://go.dev/dl/).
+2. Install the program by running the command in a shell:
 ```shell
-GO111MODULE=on go get github.com/alexandear/import-gitlab-commits
+go install github.com/alexandear/import-gitlab-commits@latest
 ```
 
-Run:
+3. Run `import-gitlab-commits`:
 ```shell
 export GITLAB_BASE_URL=https://gitlab.yourcompany.com
 export GITLAB_TOKEN=yourgitlabtoken
@@ -21,7 +20,7 @@ export COMMITTER_EMAIL=john.doe@yourcompany.com
 import-gitlab-commits
 ```
 
-Contributions before run:
+Contributions before running `import-gitlab-commits`:
 
 <img src="./screenshots/contribs_before.png" width="1000">
 
@@ -31,7 +30,7 @@ After:
 
 What work the tool does:
 * gets current user info by `GITLAB_TOKEN`;
-* fetches from `GITLAB_BASE_URL` projects that the curreny user contributed to;
+* fetches from `GITLAB_BASE_URL` projects that the current user contributed to;
 * for all projects fetches commits where author's email is the current user's email;
 * creates new repo `repo.gitlab.yourcompany.com.currentusername` and commits all fetched commits with message
 `Project: GITLAB_PROJECT_ID commit: GITLAB_COMMIT_HASH` and commit date `GITLAB_COMMIT_DATE`.
