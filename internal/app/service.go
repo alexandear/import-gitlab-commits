@@ -93,10 +93,7 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("get worktree: %w", err)
 	}
 
-	var (
-		lastProjectID  int
-		lastCommitDate time.Time
-	)
+	var lastCommitDate time.Time
 
 	switch head, errHead := r.Head(); {
 	case errHead == nil:
@@ -105,15 +102,14 @@ func (a *App) Run(ctx context.Context) error {
 			return fmt.Errorf("get head commit: %w", errCommit)
 		}
 
-		id, _, errParse := pkg.ParseCommitMessage(headCommit.Message)
+		projectID, _, errParse := pkg.ParseCommitMessage(headCommit.Message)
 		if errParse != nil {
 			return fmt.Errorf("parse commit message: %w", errParse)
 		}
 
-		lastProjectID = id
 		lastCommitDate = headCommit.Committer.When
 
-		a.logger.Printf("Found last project id %d and last commit date %v\n", lastProjectID, lastCommitDate)
+		a.logger.Printf("Found last project id %d and last commit date %v\n", projectID, lastCommitDate)
 	case errors.Is(errHead, plumbing.ErrReferenceNotFound):
 	default:
 		return fmt.Errorf("get head: %w", errHead)
@@ -121,9 +117,11 @@ func (a *App) Run(ctx context.Context) error {
 
 	projectCommitCounter := make(map[int]int, maxProjects)
 
+	projectID := 0
 	page := 1
+
 	for page > 0 {
-		projects, nextPage, errFetch := a.gitlab.FetchProjectPage(ctx, page, currentUser, lastProjectID)
+		projects, nextPage, errFetch := a.gitlab.FetchProjectPage(ctx, page, currentUser, projectID)
 		if errFetch != nil {
 			return fmt.Errorf("fetch projects: %w", errFetch)
 		}
