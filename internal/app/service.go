@@ -70,15 +70,21 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("get current user: %w", err)
 	}
 
+	a.logger.Printf("Found current user %q\n", currentUser.Name)
+
 	repoPath := "./" + repoName(a.gitlabBaseURL, currentUser)
 
 	r, err := git.PlainInit(repoPath, false)
-	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
+	if err == nil {
+		a.logger.Printf("Init repository %q\n", repoPath)
+	} else if errors.Is(err, git.ErrRepositoryAlreadyExists) {
+		a.logger.Printf("Repository %q already exists, opening it\n", repoPath)
+
 		r, err = git.PlainOpen(repoPath)
 		if err != nil {
 			return fmt.Errorf("open: %w", err)
 		}
-	} else if err != nil {
+	} else {
 		return fmt.Errorf("init: %w", err)
 	}
 
@@ -106,6 +112,8 @@ func (a *App) Run(ctx context.Context) error {
 
 		lastProjectID = id
 		lastCommitDate = headCommit.Committer.When
+
+		a.logger.Printf("Found last project id %d and last commit date %v\n", lastProjectID, lastCommitDate)
 	case errors.Is(errHead, plumbing.ErrReferenceNotFound):
 	default:
 		return fmt.Errorf("get head: %w", errHead)
