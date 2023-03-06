@@ -4,7 +4,7 @@ The tool to import commits from private GitLab to separate repo. Can be used to 
 
 # Getting Started
 
-1. Download and install [Go 1.19](https://go.dev/dl/).
+1. Download and install [Go 1.20](https://go.dev/dl/).
 2. Install the program by running the command in a shell:
 ```shell
 go install github.com/alexandear/import-gitlab-commits@latest

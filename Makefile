@@ -5,6 +5,8 @@ export GOBIN := $(MAKEFILE_PATH)/bin
 
 PATH := $(GOBIN):$(PATH)
 
+GOLANGCI_LINT_VERSION=$(shell awk '/GOLANGCI_LINT_VERSION:/ { print $$2 }' .github/workflows/lint.yml)
+
 .PHONY: all
 all: clean format build lint test
 
@@ -26,7 +28,7 @@ test:
 .PHONY: lint
 lint:
 	@echo lint
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.2
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	@$(GOBIN)/golangci-lint run
 
 .PHONY: format
