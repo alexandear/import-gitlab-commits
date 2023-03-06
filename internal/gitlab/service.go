@@ -30,16 +30,16 @@ func New(logger *log.Logger, gitlabClient *gitlab.Client) *Service {
 }
 
 func (s *Service) CurrentUser(ctx context.Context) (*pkg.User, error) {
-	u, _, err := s.gitlabClient.Users.CurrentUser(gitlab.WithContext(ctx))
+	user, _, err := s.gitlabClient.Users.CurrentUser(gitlab.WithContext(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("get current user: %w", err)
 	}
 
 	return &pkg.User{
-		Name:      u.Name,
-		Email:     u.Email,
-		Username:  u.Username,
-		CreatedAt: *u.CreatedAt,
+		Name:      user.Name,
+		Email:     user.Email,
+		Username:  user.Username,
+		CreatedAt: *user.CreatedAt,
 	}, nil
 }
 
@@ -66,14 +66,14 @@ func (s *Service) FetchProjectPage(ctx context.Context, page int, user *pkg.User
 		return nil, 0, fmt.Errorf("list projects: %w", err)
 	}
 
-	for _, p := range projs {
-		if !s.hasUserContributions(ctx, user, p.ID) {
+	for _, proj := range projs {
+		if !s.hasUserContributions(ctx, user, proj.ID) {
 			continue
 		}
 
-		s.logger.Printf("fetching project: %d", p.ID)
+		s.logger.Printf("fetching project: %d", proj.ID)
 
-		projects = append(projects, &pkg.Project{ID: p.ID})
+		projects = append(projects, &pkg.Project{ID: proj.ID})
 	}
 
 	if resp.CurrentPage >= resp.TotalPages {
@@ -144,8 +144,9 @@ func (s *Service) FetchCommits(ctx context.Context, user *pkg.User, projectID in
 	return commits, nil
 }
 
-func (s *Service) fetchCommitPage(ctx context.Context, user *pkg.User, page, perPage int, since time.Time,
-	projectID int) (commits []*pkg.Commit, nextPage int, err error) {
+func (s *Service) fetchCommitPage(
+	ctx context.Context, user *pkg.User, page, perPage int, since time.Time, projectID int,
+) (commits []*pkg.Commit, nextPage int, err error) {
 	commits = make([]*pkg.Commit, 0, perPage)
 
 	opt := &gitlab.ListCommitsOptions{
@@ -162,14 +163,14 @@ func (s *Service) fetchCommitPage(ctx context.Context, user *pkg.User, page, per
 		return nil, 0, fmt.Errorf("get commits for project %d: %w", projectID, err)
 	}
 
-	for _, c := range comms {
-		if !strings.EqualFold(c.AuthorEmail, user.Email) || !strings.EqualFold(c.CommitterEmail, user.Email) {
+	for _, comm := range comms {
+		if !strings.EqualFold(comm.AuthorEmail, user.Email) || !strings.EqualFold(comm.CommitterEmail, user.Email) {
 			continue
 		}
 
-		s.logger.Printf("fetching commit: %s %s", c.ShortID, c.CommittedDate)
+		s.logger.Printf("fetching commit: %s %s", comm.ShortID, comm.CommittedDate)
 
-		commits = append(commits, pkg.NewCommit(*c.CommittedDate, projectID, c.ID))
+		commits = append(commits, pkg.NewCommit(*comm.CommittedDate, projectID, comm.ID))
 	}
 
 	// For performance reasons, if a query returns more than 10,000 records, GitLab

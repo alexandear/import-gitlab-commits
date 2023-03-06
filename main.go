@@ -11,6 +11,6 @@ func main() {
 	logger := log.New(os.Stdout, "", log.Lshortfile|log.Ltime)
 
 	if err := cmd.Execute(logger); err != nil {
-		logger.Fatal("Error:", err)
+		logger.Fatalln("Error:", err)
 	}
 }

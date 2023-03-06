@@ -48,7 +48,8 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committ
 	}
 
 	f := gitlab.New(logger, gitlabClient)
-	a := &App{
+
+	return &App{
 		logger:        logger,
 		gitlab:        f,
 		gitlabBaseURL: gitlabBaseURL,
@@ -56,9 +57,7 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committ
 			Name:  committerName,
 			Email: committerEmail,
 		},
-	}
-
-	return a, nil
+	}, nil
 }
 
 func (a *App) Run(ctx context.Context) error {
@@ -74,46 +73,17 @@ func (a *App) Run(ctx context.Context) error {
 
 	repoPath := "./" + repoName(a.gitlabBaseURL, currentUser)
 
-	r, err := git.PlainInit(repoPath, false)
-	if err == nil {
-		a.logger.Printf("Init repository %q\n", repoPath)
-	} else if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-		a.logger.Printf("Repository %q already exists, opening it\n", repoPath)
-
-		r, err = git.PlainOpen(repoPath)
-		if err != nil {
-			return fmt.Errorf("open: %w", err)
-		}
-	} else {
-		return fmt.Errorf("init: %w", err)
+	repo, err := a.createOrOpenRepo(repoPath)
+	if err != nil {
+		return fmt.Errorf("create or open repo: %w", err)
 	}
 
-	w, err := r.Worktree()
+	worktree, err := repo.Worktree()
 	if err != nil {
 		return fmt.Errorf("get worktree: %w", err)
 	}
 
-	var lastCommitDate time.Time
-
-	switch head, errHead := r.Head(); {
-	case errHead == nil:
-		headCommit, errCommit := r.CommitObject(head.Hash())
-		if errCommit != nil {
-			return fmt.Errorf("get head commit: %w", errCommit)
-		}
-
-		projectID, _, errParse := pkg.ParseCommitMessage(headCommit.Message)
-		if errParse != nil {
-			return fmt.Errorf("parse commit message: %w", errParse)
-		}
-
-		lastCommitDate = headCommit.Committer.When
-
-		a.logger.Printf("Found last project id %d and last commit date %v\n", projectID, lastCommitDate)
-	case errors.Is(errHead, plumbing.ErrReferenceNotFound):
-	default:
-		return fmt.Errorf("get head: %w", errHead)
-	}
+	lastCommitDate := a.lastCommitDate(repo)
 
 	projectCommitCounter := make(map[int]int, maxProjects)
 
@@ -127,7 +97,7 @@ func (a *App) Run(ctx context.Context) error {
 		}
 
 		for _, project := range projects {
-			commits, errCommit := a.doCommitsForProject(ctx, w, currentUser, project, lastCommitDate)
+			commits, errCommit := a.doCommitsForProject(ctx, worktree, currentUser, project, lastCommitDate)
 			if errCommit != nil {
 				return fmt.Errorf("do commits: %w", errCommit)
 			}
@@ -145,8 +115,62 @@ func (a *App) Run(ctx context.Context) error {
 	return nil
 }
 
-func (a *App) doCommitsForProject(ctx context.Context, w *git.Worktree, currentUser *pkg.User, project *pkg.Project,
-	lastCommitDate time.Time) (int, error) {
+func (a *App) createOrOpenRepo(repoPath string) (*git.Repository, error) {
+	repo, err := git.PlainInit(repoPath, false)
+	if err == nil {
+		a.logger.Printf("Init repository %q\n", repoPath)
+
+		return repo, nil
+	}
+
+	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
+		a.logger.Printf("Repository %q already exists, opening it\n", repoPath)
+
+		repo, err = git.PlainOpen(repoPath)
+		if err != nil {
+			return nil, fmt.Errorf("open: %w", err)
+		}
+
+		return repo, nil
+	}
+
+	return nil, fmt.Errorf("init: %w", err)
+}
+
+func (a *App) lastCommitDate(repo *git.Repository) time.Time {
+	head, err := repo.Head()
+	if err != nil {
+		if !errors.Is(err, plumbing.ErrReferenceNotFound) {
+			a.logger.Printf("Failed to get repo head: %v", err)
+		}
+
+		return time.Time{}
+	}
+
+	headCommit, err := repo.CommitObject(head.Hash())
+	if err != nil {
+		a.logger.Printf("Failed to get head commit: %v\n", err)
+
+		return time.Time{}
+	}
+
+	projectID, _, err := pkg.ParseCommitMessage(headCommit.Message)
+	if err != nil {
+		a.logger.Printf("Failed to parse commit message: %v\n", err)
+
+		return time.Time{}
+	}
+
+	lastCommitDate := headCommit.Committer.When
+
+	a.logger.Printf("Found last project id %d and last commit date %v\n", projectID, lastCommitDate)
+
+	return lastCommitDate
+}
+
+func (a *App) doCommitsForProject(
+	ctx context.Context, worktree *git.Worktree, currentUser *pkg.User, project *pkg.Project, lastCommitDate time.Time,
+) (int, error) {
 	commits, err := a.gitlab.FetchCommits(ctx, currentUser, project.ID, lastCommitDate)
 	if err != nil {
 		return 0, fmt.Errorf("fetch commits: %w", err)
@@ -164,7 +188,7 @@ func (a *App) doCommitsForProject(ctx context.Context, w *git.Worktree, currentU
 	for _, commit := range commits {
 		committer.When = commit.CommittedAt
 
-		if _, errCommit := w.Commit(commit.Message, &git.CommitOptions{
+		if _, errCommit := worktree.Commit(commit.Message, &git.CommitOptions{
 			Author:    committer,
 			Committer: committer,
 		}); errCommit != nil {

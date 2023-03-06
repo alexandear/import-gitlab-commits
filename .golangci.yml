@@ -7,19 +7,9 @@ run:
 linters-settings:
   govet:
     check-shadowing: true
-  golint:
-    min-confidence: 0
-  maligned:
-    suggest-new: true
   goconst:
     min-len: 2
     min-occurrences: 2
-  depguard:
-    list-type: blacklist
-    packages:
-      # logging is allowed only by logutils.Log, logrus
-      # is allowed to use only in logutils package
-      - github.com/sirupsen/logrus
   misspell:
     locale: US
   gocritic:
@@ -33,8 +23,20 @@ linters:
   disable:
     - maligned
     - exhaustivestruct
-    - gosec
-    - funlen
+    - exhaustruct
+    - nonamedreturns
+    - gomnd
+    - nosnakecase
+    - interfacer
+    - varcheck
+    - ifshort
+    - structcheck
+    - deadcode
+    - scopelint
+    - golint
+    - rowserrcheck
+    - wastedassign
+    - goerr113
 
 issues:
   exclude-rules:

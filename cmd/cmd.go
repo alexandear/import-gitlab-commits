@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
 	"os"
 	"time"
 
-	pkg "github.com/alexandear/import-gitlab-commits/internal"
 	"github.com/alexandear/import-gitlab-commits/internal/app"
 )
 
@@ -19,25 +19,25 @@ const (
 func Execute(logger *log.Logger) error {
 	token := os.Getenv("GITLAB_TOKEN")
 	if token == "" {
-		return pkg.NewErrInvalidArgument(`empty GITLAB_TOKEN, example "yourgitlabtoken"`)
+		return errors.New(`empty GITLAB_TOKEN, example "yourgitlabtoken"`)
 	}
 
 	baseURL, err := url.Parse(os.Getenv("GITLAB_BASE_URL"))
 	if err != nil {
-		return pkg.NewErrInvalidArgument(`wrong GITLAB_BASE_URL, example "https://gitlab.example.com/"`)
+		return errors.New(`wrong GITLAB_BASE_URL, example "https://gitlab.com"`)
 	}
 
 	committerName := os.Getenv("COMMITTER_NAME")
 	if committerName == "" {
-		return pkg.NewErrInvalidArgument(`empty COMMITTER_NAME, example "John Doe"`)
+		return errors.New(`empty COMMITTER_NAME, example "John Doe"`)
 	}
 
 	committerEmail := os.Getenv("COMMITTER_EMAIL")
 	if committerEmail == "" {
-		return pkg.NewErrInvalidArgument(`empty COMMITTER_EMAIL, example "john.doe@example.com"`)
+		return errors.New(`empty COMMITTER_EMAIL, example "john.doe@example.com"`)
 	}
 
-	a, err := app.New(logger, token, baseURL, committerName, committerEmail)
+	app, err := app.New(logger, token, baseURL, committerName, committerEmail)
 	if err != nil {
 		return fmt.Errorf("create app: %w", err)
 	}
@@ -45,5 +45,9 @@ func Execute(logger *log.Logger) error {
 	ctx, cancel := context.WithTimeout(context.Background(), runTimeout)
 	defer cancel()
 
-	return a.Run(ctx)
+	if err := app.Run(ctx); err != nil {
+		return fmt.Errorf("app run: %w", err)
+	}
+
+	return nil
 }
