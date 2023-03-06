@@ -69,7 +69,7 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("get current user: %w", err)
 	}
 
-	a.logger.Printf("Found current user %q\n", currentUser.Name)
+	a.logger.Printf("Found current user %q", currentUser.Name)
 
 	repoPath := "./" + repoName(a.gitlabBaseURL, currentUser)
 
@@ -118,13 +118,13 @@ func (a *App) Run(ctx context.Context) error {
 func (a *App) createOrOpenRepo(repoPath string) (*git.Repository, error) {
 	repo, err := git.PlainInit(repoPath, false)
 	if err == nil {
-		a.logger.Printf("Init repository %q\n", repoPath)
+		a.logger.Printf("Init repository %q", repoPath)
 
 		return repo, nil
 	}
 
 	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-		a.logger.Printf("Repository %q already exists, opening it\n", repoPath)
+		a.logger.Printf("Repository %q already exists, opening it", repoPath)
 
 		repo, err = git.PlainOpen(repoPath)
 		if err != nil {
@@ -149,21 +149,21 @@ func (a *App) lastCommitDate(repo *git.Repository) time.Time {
 
 	headCommit, err := repo.CommitObject(head.Hash())
 	if err != nil {
-		a.logger.Printf("Failed to get head commit: %v\n", err)
+		a.logger.Printf("Failed to get head commit: %v", err)
 
 		return time.Time{}
 	}
 
 	projectID, _, err := pkg.ParseCommitMessage(headCommit.Message)
 	if err != nil {
-		a.logger.Printf("Failed to parse commit message: %v\n", err)
+		a.logger.Printf("Failed to parse commit message: %v", err)
 
 		return time.Time{}
 	}
 
 	lastCommitDate := headCommit.Committer.When
 
-	a.logger.Printf("Found last project id %d and last commit date %v\n", projectID, lastCommitDate)
+	a.logger.Printf("Found last project id %d and last commit date %v", projectID, lastCommitDate)
 
 	return lastCommitDate
 }
@@ -176,7 +176,7 @@ func (a *App) doCommitsForProject(
 		return 0, fmt.Errorf("fetch commits: %w", err)
 	}
 
-	a.logger.Printf("fetched %d commits for project %d", len(commits), project.ID)
+	a.logger.Printf("Fetched %d commits for project %d", len(commits), project.ID)
 
 	var commitCounter int
 

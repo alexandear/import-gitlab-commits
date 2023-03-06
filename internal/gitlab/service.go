@@ -71,7 +71,7 @@ func (s *Service) FetchProjectPage(ctx context.Context, page int, user *pkg.User
 			continue
 		}
 
-		s.logger.Printf("fetching project: %d", proj.ID)
+		s.logger.Printf("Fetching project: %d", proj.ID)
 
 		projects = append(projects, &pkg.Project{ID: proj.ID})
 	}
