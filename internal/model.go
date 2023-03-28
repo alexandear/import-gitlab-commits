@@ -37,7 +37,7 @@ func ParseCommitMessage(message string) (projectID int, hash string, err error) 
 
 	id, errAtoi := strconv.Atoi(messageParts[1])
 	if errAtoi != nil {
-		return 0, "", fmt.Errorf("failled to convert %s to project id: %w", messageParts[1], errAtoi)
+		return 0, "", fmt.Errorf("failed to convert %s to project id: %w", messageParts[1], errAtoi)
 	}
 
 	projectID = id
