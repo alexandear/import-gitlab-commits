@@ -2,7 +2,6 @@ package gitlab
 
 import (
 	"context"
-	"log"
 	"os"
 	"testing"
 
@@ -11,11 +10,12 @@ import (
 	"github.com/xanzy/go-gitlab"
 
 	pkg "github.com/alexandear/import-gitlab-commits/internal"
+	"github.com/alexandear/import-gitlab-commits/test"
 )
 
 func TestService_hasContributionsByUser(t *testing.T) {
 	git := initGit(t)
-	s := New(log.New(newTestWriter(t), "", log.Lshortfile|log.Ltime), git)
+	s := New(test.NewLog(t), git)
 	user := newCurrentUser(t, git)
 
 	assert.False(t, s.hasUserContributions(context.Background(), user, 3))
@@ -23,8 +23,11 @@ func TestService_hasContributionsByUser(t *testing.T) {
 }
 
 func initGit(t *testing.T) *gitlab.Client {
+	t.Helper()
+
 	token := os.Getenv("GITLAB_TOKEN")
 	baseURL := os.Getenv("GITLAB_BASE_URL")
+
 	if token == "" || baseURL == "" {
 		t.SkipNow()
 	}
@@ -35,29 +38,15 @@ func initGit(t *testing.T) *gitlab.Client {
 	return git
 }
 
-type testWriter struct {
-	t *testing.T
-}
-
-func newTestWriter(t *testing.T) *testWriter {
-	return &testWriter{t: t}
-}
-
-func (w *testWriter) Write(p []byte) (n int, err error) {
-	str := string(p)
-
-	w.t.Log(str[:len(str)-1])
-
-	return len(p), nil
-}
-
 func newCurrentUser(t *testing.T, gitlabClient *gitlab.Client) *pkg.User {
-	u, _, err := gitlabClient.Users.CurrentUser()
+	t.Helper()
+
+	user, _, err := gitlabClient.Users.CurrentUser()
 	require.NoError(t, err)
 
 	return &pkg.User{
-		Name:      u.Name,
-		Email:     u.Email,
-		CreatedAt: *u.CreatedAt,
+		Name:      user.Name,
+		Email:     user.Email,
+		CreatedAt: *user.CreatedAt,
 	}
 }

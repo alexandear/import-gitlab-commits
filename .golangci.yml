@@ -2,7 +2,7 @@ run:
   concurrency: 8
   deadline: 10m
   issues-exit-code: 1
-  tests: false
+  tests: true
 
 linters-settings:
   govet:
@@ -37,6 +37,8 @@ linters:
     - rowserrcheck
     - wastedassign
     - goerr113
+    - paralleltest
+    - testpackage
 
 issues:
   exclude-rules:
