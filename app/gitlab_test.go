@@ -1,4 +1,4 @@
-package gitlab
+package app
 
 import (
 	"context"
@@ -9,13 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
 
-	pkg "github.com/alexandear/import-gitlab-commits/internal"
 	"github.com/alexandear/import-gitlab-commits/test"
 )
 
 func TestService_hasContributionsByUser(t *testing.T) {
 	git := initGit(t)
-	s := New(test.NewLog(t), git)
+	s := NewGitLab(test.NewLog(t), git)
 	user := newCurrentUser(t, git)
 
 	assert.False(t, s.hasUserContributions(context.Background(), user, 3))
@@ -38,13 +37,13 @@ func initGit(t *testing.T) *gitlab.Client {
 	return git
 }
 
-func newCurrentUser(t *testing.T, gitlabClient *gitlab.Client) *pkg.User {
+func newCurrentUser(t *testing.T, gitlabClient *gitlab.Client) *User {
 	t.Helper()
 
 	user, _, err := gitlabClient.Users.CurrentUser()
 	require.NoError(t, err)
 
-	return &pkg.User{
+	return &User{
 		Name:      user.Name,
 		Email:     user.Email,
 		CreatedAt: *user.CreatedAt,

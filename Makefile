@@ -23,7 +23,7 @@ build:
 .PHONY: test
 test:
 	@echo test
-	@go test -count=1 -race -v ./...
+	@go test -shuffle=on -count=1 -race -v ./...
 
 .PHONY: lint
 lint:

@@ -1,4 +1,4 @@
-package gitlab
+package app
 
 import (
 	"context"
@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/xanzy/go-gitlab"
-
-	pkg "github.com/alexandear/import-gitlab-commits/internal"
 )
 
 const (
@@ -22,20 +20,20 @@ type Service struct {
 	gitlabClient *gitlab.Client
 }
 
-func New(logger *log.Logger, gitlabClient *gitlab.Client) *Service {
+func NewGitLab(logger *log.Logger, gitlabClient *gitlab.Client) *Service {
 	return &Service{
 		logger:       logger,
 		gitlabClient: gitlabClient,
 	}
 }
 
-func (s *Service) CurrentUser(ctx context.Context) (*pkg.User, error) {
+func (s *Service) CurrentUser(ctx context.Context) (*User, error) {
 	user, _, err := s.gitlabClient.Users.CurrentUser(gitlab.WithContext(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("get current user: %w", err)
 	}
 
-	return &pkg.User{
+	return &User{
 		Name:      user.Name,
 		Email:     user.Email,
 		Username:  user.Username,
@@ -43,11 +41,11 @@ func (s *Service) CurrentUser(ctx context.Context) (*pkg.User, error) {
 	}, nil
 }
 
-func (s *Service) FetchProjectPage(ctx context.Context, page int, user *pkg.User, idAfter int,
-) (projects []*pkg.Project, nextPage int, err error) {
+func (s *Service) FetchProjectPage(ctx context.Context, page int, user *User, idAfter int,
+) (projects []*Project, nextPage int, err error) {
 	const perPage = 100
 
-	projects = make([]*pkg.Project, 0, perPage)
+	projects = make([]*Project, 0, perPage)
 
 	opt := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
@@ -73,7 +71,7 @@ func (s *Service) FetchProjectPage(ctx context.Context, page int, user *pkg.User
 
 		s.logger.Printf("Fetching project: %d", proj.ID)
 
-		projects = append(projects, &pkg.Project{ID: proj.ID})
+		projects = append(projects, &Project{ID: proj.ID})
 	}
 
 	if resp.CurrentPage >= resp.TotalPages {
@@ -83,7 +81,7 @@ func (s *Service) FetchProjectPage(ctx context.Context, page int, user *pkg.User
 	return projects, resp.NextPage, nil
 }
 
-func (s *Service) hasUserContributions(ctx context.Context, user *pkg.User, projectID int) bool {
+func (s *Service) hasUserContributions(ctx context.Context, user *User, projectID int) bool {
 	const perPage = 50
 
 	opt := &gitlab.ListContributorsOptions{
@@ -117,9 +115,9 @@ func (s *Service) hasUserContributions(ctx context.Context, user *pkg.User, proj
 	return false
 }
 
-func (s *Service) FetchCommits(ctx context.Context, user *pkg.User, projectID int, since time.Time,
-) ([]*pkg.Commit, error) {
-	commits := make([]*pkg.Commit, 0, maxCommits)
+func (s *Service) FetchCommits(ctx context.Context, user *User, projectID int, since time.Time,
+) ([]*Commit, error) {
+	commits := make([]*Commit, 0, maxCommits)
 
 	if since.IsZero() {
 		since = user.CreatedAt
@@ -145,9 +143,9 @@ func (s *Service) FetchCommits(ctx context.Context, user *pkg.User, projectID in
 }
 
 func (s *Service) fetchCommitPage(
-	ctx context.Context, user *pkg.User, page, perPage int, since time.Time, projectID int,
-) (commits []*pkg.Commit, nextPage int, err error) {
-	commits = make([]*pkg.Commit, 0, perPage)
+	ctx context.Context, user *User, page, perPage int, since time.Time, projectID int,
+) (commits []*Commit, nextPage int, err error) {
+	commits = make([]*Commit, 0, perPage)
 
 	opt := &gitlab.ListCommitsOptions{
 		ListOptions: gitlab.ListOptions{
@@ -170,7 +168,7 @@ func (s *Service) fetchCommitPage(
 
 		s.logger.Printf("fetching commit: %s %s", comm.ShortID, comm.CommittedDate)
 
-		commits = append(commits, pkg.NewCommit(*comm.CommittedDate, projectID, comm.ID))
+		commits = append(commits, NewCommit(*comm.CommittedDate, projectID, comm.ID))
 	}
 
 	// For performance reasons, if a query returns more than 10,000 records, GitLab

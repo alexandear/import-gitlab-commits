@@ -13,9 +13,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	goGitlab "github.com/xanzy/go-gitlab"
-
-	pkg "github.com/alexandear/import-gitlab-commits/internal"
-	"github.com/alexandear/import-gitlab-commits/internal/gitlab"
 )
 
 const (
@@ -25,10 +22,10 @@ const (
 )
 
 type Gitlab interface {
-	CurrentUser(ctx context.Context) (*pkg.User, error)
-	FetchProjectPage(ctx context.Context, page int, user *pkg.User, idAfter int,
-	) (projects []*pkg.Project, nextPage int, err error)
-	FetchCommits(ctx context.Context, user *pkg.User, projectID int, since time.Time) ([]*pkg.Commit, error)
+	CurrentUser(ctx context.Context) (*User, error)
+	FetchProjectPage(ctx context.Context, page int, user *User, idAfter int,
+	) (projects []*Project, nextPage int, err error)
+	FetchCommits(ctx context.Context, user *User, projectID int, since time.Time) ([]*Commit, error)
 }
 
 type App struct {
@@ -37,7 +34,7 @@ type App struct {
 	gitlabBaseURL *url.URL
 	gitlab        Gitlab
 
-	committer *pkg.Committer
+	committer *Committer
 }
 
 func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committerName, committerEmail string,
@@ -47,13 +44,13 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committ
 		return nil, fmt.Errorf("create GitLab client: %w", err)
 	}
 
-	f := gitlab.New(logger, gitlabClient)
+	f := NewGitLab(logger, gitlabClient)
 
 	return &App{
 		logger:        logger,
 		gitlab:        f,
 		gitlabBaseURL: gitlabBaseURL,
-		committer: &pkg.Committer{
+		committer: &Committer{
 			Name:  committerName,
 			Email: committerEmail,
 		},
@@ -154,7 +151,7 @@ func (a *App) lastCommitDate(repo *git.Repository) time.Time {
 		return time.Time{}
 	}
 
-	projectID, _, err := pkg.ParseCommitMessage(headCommit.Message)
+	projectID, _, err := ParseCommitMessage(headCommit.Message)
 	if err != nil {
 		a.logger.Printf("Failed to parse commit message: %v", err)
 
@@ -169,7 +166,7 @@ func (a *App) lastCommitDate(repo *git.Repository) time.Time {
 }
 
 func (a *App) doCommitsForProject(
-	ctx context.Context, worktree *git.Worktree, currentUser *pkg.User, project *pkg.Project, lastCommitDate time.Time,
+	ctx context.Context, worktree *git.Worktree, currentUser *User, project *Project, lastCommitDate time.Time,
 ) (int, error) {
 	commits, err := a.gitlab.FetchCommits(ctx, currentUser, project.ID, lastCommitDate)
 	if err != nil {
@@ -202,7 +199,7 @@ func (a *App) doCommitsForProject(
 }
 
 // repoName generates unique repo name for the user.
-func repoName(baseURL *url.URL, user *pkg.User) string {
+func repoName(baseURL *url.URL, user *User) string {
 	host := baseURL.Host
 
 	const hostPortLen = 2

@@ -1,4 +1,4 @@
-package pkg
+package app
 
 import (
 	"fmt"
@@ -19,12 +19,8 @@ type Commit struct {
 func NewCommit(committedAt time.Time, projectID int, hash string) *Commit {
 	return &Commit{
 		CommittedAt: committedAt,
-		Message:     CommitMessage(projectID, hash),
+		Message:     fmt.Sprintf("Project: %d commit: %s", projectID, hash),
 	}
-}
-
-func CommitMessage(projectID int, hash string) string {
-	return fmt.Sprintf("Project: %d commit: %s", projectID, hash)
 }
 
 func ParseCommitMessage(message string) (projectID int, hash string, err error) {
