@@ -1,13 +1,15 @@
-name: Test
+name: Build
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 8 * * 1' # run "At 8:00 on Monday"
 
 jobs:
-  test:
+  run:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     strategy:
@@ -23,4 +25,10 @@ jobs:
           go-version: ${{ matrix.go }}
           check-latest: true
 
-      - run: go test -v -count=1 -race -shuffle=on -coverprofile=coverage.txt ./...
+      - run: go mod tidy && git diff --exit-code
+
+      - run: go mod download
+
+      - run: go mod verify
+
+      - run: go build -o /dev/null ./...
