@@ -21,20 +21,21 @@ const (
 	maxProjects = 1000
 )
 
-type Gitlab interface {
-	CurrentUser(ctx context.Context) (*User, error)
-	FetchProjectPage(ctx context.Context, page int, user *User, idAfter int,
-	) (projects []*Project, nextPage int, err error)
-	FetchCommits(ctx context.Context, user *User, projectID int, since time.Time) ([]*Commit, error)
-}
-
 type App struct {
 	logger *log.Logger
 
 	gitlabBaseURL *url.URL
-	gitlab        Gitlab
+	gitlab        *GitLab
 
-	committer *Committer
+	committerName  string
+	committerEmail string
+}
+
+type User struct {
+	Name      string
+	Email     string
+	Username  string
+	CreatedAt time.Time
 }
 
 func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committerName, committerEmail string,
@@ -47,13 +48,11 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committ
 	f := NewGitLab(logger, gitlabClient)
 
 	return &App{
-		logger:        logger,
-		gitlab:        f,
-		gitlabBaseURL: gitlabBaseURL,
-		committer: &Committer{
-			Name:  committerName,
-			Email: committerEmail,
-		},
+		logger:         logger,
+		gitlab:         f,
+		gitlabBaseURL:  gitlabBaseURL,
+		committerName:  committerName,
+		committerEmail: committerEmail,
 	}, nil
 }
 
@@ -99,7 +98,7 @@ func (a *App) Run(ctx context.Context) error {
 				return fmt.Errorf("do commits: %w", errCommit)
 			}
 
-			projectCommitCounter[project.ID] = commits
+			projectCommitCounter[projectID] = commits
 		}
 
 		page = nextPage
@@ -166,20 +165,20 @@ func (a *App) lastCommitDate(repo *git.Repository) time.Time {
 }
 
 func (a *App) doCommitsForProject(
-	ctx context.Context, worktree *git.Worktree, currentUser *User, project *Project, lastCommitDate time.Time,
+	ctx context.Context, worktree *git.Worktree, currentUser *User, projectID int, lastCommitDate time.Time,
 ) (int, error) {
-	commits, err := a.gitlab.FetchCommits(ctx, currentUser, project.ID, lastCommitDate)
+	commits, err := a.gitlab.FetchCommits(ctx, currentUser, projectID, lastCommitDate)
 	if err != nil {
 		return 0, fmt.Errorf("fetch commits: %w", err)
 	}
 
-	a.logger.Printf("Fetched %d commits for project %d", len(commits), project.ID)
+	a.logger.Printf("Fetched %d commits for project %d", len(commits), projectID)
 
 	var commitCounter int
 
 	committer := &object.Signature{
-		Name:  a.committer.Name,
-		Email: a.committer.Email,
+		Name:  a.committerName,
+		Email: a.committerEmail,
 	}
 
 	for _, commit := range commits {

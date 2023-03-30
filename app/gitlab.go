@@ -14,20 +14,20 @@ const (
 	maxCommits = 1000
 )
 
-type Service struct {
+type GitLab struct {
 	logger *log.Logger
 
 	gitlabClient *gitlab.Client
 }
 
-func NewGitLab(logger *log.Logger, gitlabClient *gitlab.Client) *Service {
-	return &Service{
+func NewGitLab(logger *log.Logger, gitlabClient *gitlab.Client) *GitLab {
+	return &GitLab{
 		logger:       logger,
 		gitlabClient: gitlabClient,
 	}
 }
 
-func (s *Service) CurrentUser(ctx context.Context) (*User, error) {
+func (s *GitLab) CurrentUser(ctx context.Context) (*User, error) {
 	user, _, err := s.gitlabClient.Users.CurrentUser(gitlab.WithContext(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("get current user: %w", err)
@@ -41,11 +41,11 @@ func (s *Service) CurrentUser(ctx context.Context) (*User, error) {
 	}, nil
 }
 
-func (s *Service) FetchProjectPage(ctx context.Context, page int, user *User, idAfter int,
-) (projects []*Project, nextPage int, err error) {
+func (s *GitLab) FetchProjectPage(ctx context.Context, page int, user *User, idAfter int,
+) (_ []int, nextPage int, _ error) {
 	const perPage = 100
 
-	projects = make([]*Project, 0, perPage)
+	projects := make([]int, 0, perPage)
 
 	opt := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
@@ -71,7 +71,7 @@ func (s *Service) FetchProjectPage(ctx context.Context, page int, user *User, id
 
 		s.logger.Printf("Fetching project: %d", proj.ID)
 
-		projects = append(projects, &Project{ID: proj.ID})
+		projects = append(projects, proj.ID)
 	}
 
 	if resp.CurrentPage >= resp.TotalPages {
@@ -81,7 +81,7 @@ func (s *Service) FetchProjectPage(ctx context.Context, page int, user *User, id
 	return projects, resp.NextPage, nil
 }
 
-func (s *Service) hasUserContributions(ctx context.Context, user *User, projectID int) bool {
+func (s *GitLab) hasUserContributions(ctx context.Context, user *User, projectID int) bool {
 	const perPage = 50
 
 	opt := &gitlab.ListContributorsOptions{
@@ -115,7 +115,7 @@ func (s *Service) hasUserContributions(ctx context.Context, user *User, projectI
 	return false
 }
 
-func (s *Service) FetchCommits(ctx context.Context, user *User, projectID int, since time.Time,
+func (s *GitLab) FetchCommits(ctx context.Context, user *User, projectID int, since time.Time,
 ) ([]*Commit, error) {
 	commits := make([]*Commit, 0, maxCommits)
 
@@ -142,7 +142,7 @@ func (s *Service) FetchCommits(ctx context.Context, user *User, projectID int, s
 	return commits, nil
 }
 
-func (s *Service) fetchCommitPage(
+func (s *GitLab) fetchCommitPage(
 	ctx context.Context, user *User, page, perPage int, since time.Time, projectID int,
 ) (commits []*Commit, nextPage int, err error) {
 	commits = make([]*Commit, 0, perPage)
