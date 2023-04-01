@@ -4,6 +4,8 @@
 
 The tool to import commits from private GitLab to separate repo. Can be used to show your programming activity for another company in GitHub.
 
+Check out this informative blog post on how to import GitLab commits at https://www.alexandear.tech/posts/2023-03-08-import-gitlab-commits/ for a practical use case.
+
 # Getting Started
 
 1. Download and install [Go 1.20](https://go.dev/dl/).
