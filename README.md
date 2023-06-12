@@ -21,14 +21,15 @@ export GITLAB_TOKEN=<your_gitlab_token>
 export COMMITTER_NAME="<Name Surname>"
 export COMMITTER_EMAIL=<mail@example.com>
 
-import-gitlab-commits
+$(go env GOPATH)/bin/import-gitlab-commits
 ```
 
 where
 - `GITLAB_BASE_URL` is a GitLab [instance URL](https://stackoverflow.com/questions/58236175/what-is-a-gitlab-instance-url-and-how-can-i-get-it), e.g. `https://gitlab.com`, `https://gitlab.gnome.org` or any GitLab server;
 - `GITLAB_TOKEN` is a personal [access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token);
 - `COMMITTER_NAME` is your GitHub name with surname, e.g. `John Doe` (can be passed to `git config user.name`);
-- `COMMITTER_EMAIL` is your GitHub email, e.g. `john.doe@example.com` (valid for `git config user.email`).
+- `COMMITTER_EMAIL` is your GitHub email, e.g. `john.doe@example.com` (valid for `git config user.email`);
+- `$(go env GOPATH)/bin/` is the path where `import-gitlab-commits` installed.
 
 ## Example
 
