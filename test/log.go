@@ -5,15 +5,15 @@ import (
 	"testing"
 )
 
+// Writer used for a logger in tests.
+type Writer struct {
+	t *testing.T
+}
+
 func NewLog(t *testing.T) *log.Logger {
 	t.Helper()
 
 	return log.New(NewWriter(t), "", log.Lshortfile|log.Ltime)
-}
-
-// Writer used for a logger in tests.
-type Writer struct {
-	t *testing.T
 }
 
 func NewWriter(t *testing.T) *Writer {

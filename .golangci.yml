@@ -5,22 +5,52 @@ run:
   tests: true
 
 linters-settings:
-  govet:
-    check-shadowing: true
+  decorder:
+    dec-order:
+      - const
+      - type
+      - var
+      - func
+    disable-dec-order-check: false
+    disable-init-func-first-check: false
+  gci:
+    local-prefixes: github.com/alexandear/import-gitlab-commits
   goconst:
     min-len: 2
     min-occurrences: 2
-  misspell:
-    locale: US
   gocritic:
     enabled-tags:
+      - diagnostic
       - experimental
-  gci:
-    local-prefixes: github.com/alexandear/import-gitlab-commits
+      - opinionated
+      - performance
+      - style
+  gocognit:
+    min-complexity: 10
+  gocyclo:
+    min-complexity: 10
+  godot:
+    scope: all
+    capital: true
+  gofumpt:
+    extra-rules: true
+  govet:
+    check-shadowing: true
+  lll:
+    line-length: 140
+  misspell:
+    locale: US
+  revive:
+    enable-all-rules: true
+  tenv:
+    all: true
 
 linters:
-  enable-all: true
+  # enable-all: true
+  enable:
+    - decorder
   disable:
+    - depguard
     - maligned
     - exhaustivestruct
     - exhaustruct
@@ -39,9 +69,3 @@ linters:
     - goerr113
     - paralleltest
     - testpackage
-
-issues:
-  exclude-rules:
-    - linters:
-        - lll
-      source: "^//go:generate "

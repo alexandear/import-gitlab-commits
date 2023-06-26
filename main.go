@@ -37,7 +37,7 @@ func Execute(logger *log.Logger) error {
 		return errors.New(`empty COMMITTER_EMAIL, example "john.doe@example.com"`)
 	}
 
-	app, err := app.New(logger, token, baseURL, committerName, committerEmail)
+	application, err := app.New(logger, token, baseURL, committerName, committerEmail)
 	if err != nil {
 		return fmt.Errorf("create app: %w", err)
 	}
@@ -45,7 +45,7 @@ func Execute(logger *log.Logger) error {
 	ctx, cancel := context.WithTimeout(context.Background(), runTimeout)
 	defer cancel()
 
-	if err := app.Run(ctx); err != nil {
+	if err := application.Run(ctx); err != nil {
 		return fmt.Errorf("app run: %w", err)
 	}
 
