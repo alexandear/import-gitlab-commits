@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  GOLANGCI_LINT_VERSION: v1.51.2
+  GOLANGCI_LINT_VERSION: v1.53.3
 
 jobs:
   lint:
