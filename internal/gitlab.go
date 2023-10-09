@@ -134,7 +134,7 @@ func (s *GitLab) FetchCommits(ctx context.Context, user *User, projectID int, si
 		page = nextPage
 	}
 
-	// reverse slice
+	// Reverse slice.
 	for i, j := 0, len(commits)-1; i < j; i, j = i+1, j-1 {
 		commits[i], commits[j] = commits[j], commits[i]
 	}
@@ -172,7 +172,7 @@ func (s *GitLab) fetchCommitPage(
 	}
 
 	// For performance reasons, if a query returns more than 10,000 records, GitLab
-	// doesn't return TotalPages
+	// doesn't return TotalPages.
 	if resp.TotalPages == 0 {
 		return commits, resp.NextPage, nil
 	}

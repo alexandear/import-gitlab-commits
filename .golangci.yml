@@ -26,7 +26,7 @@ linters-settings:
       - performance
       - style
   gocognit:
-    min-complexity: 10
+    min-complexity: 15
   gocyclo:
     min-complexity: 10
   godot:
@@ -40,15 +40,11 @@ linters-settings:
     line-length: 140
   misspell:
     locale: US
-  revive:
-    enable-all-rules: true
   tenv:
     all: true
 
 linters:
-  # enable-all: true
-  enable:
-    - decorder
+  enable-all: true
   disable:
     - depguard
     - maligned
