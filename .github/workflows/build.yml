@@ -12,17 +12,13 @@ jobs:
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    strategy:
-      fail-fast: true
-      matrix:
-        go: ['stable', 'oldstable']
 
     steps:
       - uses: actions/checkout@v3
 
       - uses: actions/setup-go@v4
         with:
-          go-version: ${{ matrix.go }}
+          go-version: 'stable'
           check-latest: true
 
       - run: go mod tidy && git diff --exit-code
