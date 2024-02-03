@@ -65,7 +65,7 @@ func (s *GitLab) FetchProjectPage(ctx context.Context, page int, user *User, idA
 	}
 
 	for _, proj := range projs {
-		if !s.hasUserContributions(ctx, user, proj.ID) {
+		if !s.HasUserContributions(ctx, user, proj.ID) {
 			continue
 		}
 
@@ -81,7 +81,7 @@ func (s *GitLab) FetchProjectPage(ctx context.Context, page int, user *User, idA
 	return projects, resp.NextPage, nil
 }
 
-func (s *GitLab) hasUserContributions(ctx context.Context, user *User, projectID int) bool {
+func (s *GitLab) HasUserContributions(ctx context.Context, user *User, projectID int) bool {
 	const perPage = 50
 
 	opt := &gitlab.ListContributorsOptions{

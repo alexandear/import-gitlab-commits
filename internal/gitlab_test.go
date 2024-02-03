@@ -1,4 +1,4 @@
-package app
+package app_test
 
 import (
 	"context"
@@ -9,16 +9,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
 
-	"github.com/alexandear/import-gitlab-commits/test"
+	app "github.com/alexandear/import-gitlab-commits/internal"
+	"github.com/alexandear/import-gitlab-commits/internal/testutil"
 )
 
-func TestService_hasContributionsByUser(t *testing.T) {
+func TestGitLabHasUserContributions(t *testing.T) {
 	git := initGit(t)
-	s := NewGitLab(test.NewLog(t), git)
+	s := app.NewGitLab(testutil.NewLog(t), git)
 	user := newCurrentUser(t, git)
 
-	assert.False(t, s.hasUserContributions(context.Background(), user, 3))
-	assert.True(t, s.hasUserContributions(context.Background(), user, 575))
+	assert.False(t, s.HasUserContributions(context.Background(), user, 3))
+	assert.True(t, s.HasUserContributions(context.Background(), user, 575))
 }
 
 func initGit(t *testing.T) *gitlab.Client {
@@ -37,13 +38,13 @@ func initGit(t *testing.T) *gitlab.Client {
 	return git
 }
 
-func newCurrentUser(t *testing.T, gitlabClient *gitlab.Client) *User {
+func newCurrentUser(t *testing.T, gitlabClient *gitlab.Client) *app.User {
 	t.Helper()
 
 	user, _, err := gitlabClient.Users.CurrentUser()
 	require.NoError(t, err)
 
-	return &User{
+	return &app.User{
 		Name:      user.Name,
 		Email:     user.Email,
 		CreatedAt: *user.CreatedAt,
