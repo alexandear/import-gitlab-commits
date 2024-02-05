@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/alexandear/import-gitlab-commits/internal/testutil"
 )
@@ -14,7 +14,7 @@ func TestExecute(t *testing.T) {
 
 		err := Execute(testutil.NewLog(t))
 
-		assert.ErrorContains(t, err, "GITLAB_TOKEN")
+		require.ErrorContains(t, err, "GITLAB_TOKEN")
 	})
 
 	t.Run("error when wrong GITLAB_BASE_URL", func(t *testing.T) {
@@ -23,7 +23,7 @@ func TestExecute(t *testing.T) {
 
 		err := Execute(testutil.NewLog(t))
 
-		assert.ErrorContains(t, err, "GITLAB_BASE_URL")
+		require.ErrorContains(t, err, "GITLAB_BASE_URL")
 	})
 
 	t.Run("error when wrong COMMITTER_NAME", func(t *testing.T) {
@@ -33,7 +33,7 @@ func TestExecute(t *testing.T) {
 
 		err := Execute(testutil.NewLog(t))
 
-		assert.ErrorContains(t, err, "COMMITTER_NAME")
+		require.ErrorContains(t, err, "COMMITTER_NAME")
 	})
 
 	t.Run("error when wrong COMMITTER_EMAIL", func(t *testing.T) {
@@ -44,6 +44,6 @@ func TestExecute(t *testing.T) {
 
 		err := Execute(testutil.NewLog(t))
 
-		assert.ErrorContains(t, err, "COMMITTER_EMAIL")
+		require.ErrorContains(t, err, "COMMITTER_EMAIL")
 	})
 }
