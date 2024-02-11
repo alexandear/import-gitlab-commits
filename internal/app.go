@@ -185,8 +185,9 @@ func (a *App) doCommitsForProject(
 		committer.When = commit.CommittedAt
 
 		if _, errCommit := worktree.Commit(commit.Message, &git.CommitOptions{
-			Author:    committer,
-			Committer: committer,
+			Author:            committer,
+			Committer:         committer,
+			AllowEmptyCommits: true,
 		}); errCommit != nil {
 			return commitCounter, fmt.Errorf("commit: %w", errCommit)
 		}
