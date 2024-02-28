@@ -44,9 +44,18 @@ func newCurrentUser(t *testing.T, gitlabClient *gitlab.Client) *app.User {
 	user, _, err := gitlabClient.Users.CurrentUser()
 	require.NoError(t, err)
 
+	emails, _, err := gitlabClient.Users.ListEmails()
+	require.NoError(t, err)
+
+	emailAddresses := make([]string, 0, 10)
+
+	for _, email := range emails {
+		emailAddresses = append(emailAddresses, email.Email)
+	}
+
 	return &app.User{
 		Name:      user.Name,
-		Email:     user.Email,
+		Emails:    emailAddresses,
 		CreatedAt: *user.CreatedAt,
 	}
 }
