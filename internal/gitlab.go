@@ -119,10 +119,6 @@ func (s *GitLab) FetchCommits(ctx context.Context, user *User, projectID int, si
 ) ([]*Commit, error) {
 	commits := make([]*Commit, 0, maxCommits)
 
-	if since.IsZero() {
-		since = user.CreatedAt
-	}
-
 	page := 1
 	for page > 0 {
 		cms, nextPage, err := s.fetchCommitPage(ctx, user, page, 100, since, projectID)
@@ -152,8 +148,11 @@ func (s *GitLab) fetchCommitPage(
 			PerPage: perPage,
 			Page:    page,
 		},
-		Since: gitlab.Time(since),
-		All:   gitlab.Bool(true),
+		All: gitlab.Bool(true),
+	}
+
+	if !since.IsZero() {
+		opt.Since = gitlab.Time(since)
 	}
 
 	comms, resp, err := s.gitlabClient.Commits.ListCommits(projectID, opt, gitlab.WithContext(ctx))
