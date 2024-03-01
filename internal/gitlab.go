@@ -33,15 +33,12 @@ func (s *GitLab) CurrentUser(ctx context.Context) (*User, error) {
 		return nil, fmt.Errorf("get current user: %w", err)
 	}
 
-	// Get the list of email addresses for the user.
 	emails, _, err := s.gitlabClient.Users.ListEmails(gitlab.WithContext(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("get user emails: %w", err)
 	}
 
-	// Extract email addresses from the response.
-	emailAddresses := make([]string, 0, 10)
-
+	emailAddresses := make([]string, 0, len(emails))
 	for _, email := range emails {
 		emailAddresses = append(emailAddresses, email.Email)
 	}
@@ -197,13 +194,9 @@ func (s *GitLab) fetchCommitPage(
 	return commits, resp.NextPage, nil
 }
 
-// Helper function to check if an email exists in the list.
-func contains(emails []string, email string) bool {
-	for _, e := range emails {
-		if strings.EqualFold(e, email) {
-			return true
-		}
-	}
-
-	return false
+// contains checks if a string `v` is in the slice `s`, ignoring case.
+func contains(s []string, v string) bool {
+	return slices.ContainsFunc(s, func(item string) bool {
+		return strings.EqualFold(item, v)
+	})
 }
