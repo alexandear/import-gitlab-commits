@@ -33,7 +33,7 @@ type App struct {
 
 type User struct {
 	Name      string
-	Email     string
+	Emails    []string
 	Username  string
 	CreatedAt time.Time
 }
