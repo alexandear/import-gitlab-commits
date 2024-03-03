@@ -4,7 +4,7 @@ go 1.21.5
 
 require (
 	github.com/go-git/go-git/v5 v5.11.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/xanzy/go-gitlab v0.43.0
 )
 
