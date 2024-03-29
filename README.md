@@ -9,7 +9,7 @@ Check out this informative blog post on how to import GitLab commits at https://
 
 # Getting Started
 
-1. Download and install [Go 1.21](https://go.dev/dl/).
+1. Download and install [Go 1.22](https://go.dev/dl/).
 2. Install the program by running the command in a shell:
 ```shell
 go install github.com/alexandear/import-gitlab-commits@latest
