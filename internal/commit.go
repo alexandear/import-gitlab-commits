@@ -33,7 +33,7 @@ func ParseCommitMessage(message string) (projectID int, hash string, _ error) {
 	}
 
 	projectID = id
-	hash = messageParts[2]
+	hash = messageParts[3]
 
 	return projectID, hash, nil
 }
