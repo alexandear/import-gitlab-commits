@@ -1,3 +1,5 @@
+//go:build integration
+
 package app_test
 
 import (
@@ -13,48 +15,33 @@ import (
 	"github.com/alexandear/import-gitlab-commits/internal/testutil"
 )
 
-func TestGitLabHasUserContributions(t *testing.T) {
-	git := initGit(t)
-	s := app.NewGitLab(testutil.NewLog(t), git)
-	user := newCurrentUser(t, git)
+func TestGitLabCurrentUser(t *testing.T) {
+	gl := app.NewGitLab(testutil.NewLog(t), gitlabClient(t))
 
-	assert.False(t, s.HasUserContributions(context.Background(), user, 3))
-	assert.True(t, s.HasUserContributions(context.Background(), user, 575))
+	user, err := gl.CurrentUser(context.Background())
+
+	require.NoError(t, err)
+	assert.NotEmpty(t, user.Name)
+	assert.NotEmpty(t, user.Emails)
+	assert.NotEmpty(t, user.Username)
+	assert.False(t, user.CreatedAt.IsZero())
 }
 
-func initGit(t *testing.T) *gitlab.Client {
+func gitlabClient(t *testing.T) *gitlab.Client {
 	t.Helper()
 
 	token := os.Getenv("GITLAB_TOKEN")
+	if token == "" {
+		t.Fatal("GITLAB_TOKEN is required")
+	}
+
 	baseURL := os.Getenv("GITLAB_BASE_URL")
-
-	if token == "" || baseURL == "" {
-		t.SkipNow()
+	if baseURL == "" {
+		t.Fatal("GITLAB_BASE_URL is required")
 	}
 
-	git, err := gitlab.NewClient(token, gitlab.WithBaseURL(baseURL))
+	client, err := gitlab.NewClient(token, gitlab.WithBaseURL(baseURL))
 	require.NoError(t, err)
 
-	return git
-}
-
-func newCurrentUser(t *testing.T, gitlabClient *gitlab.Client) *app.User {
-	t.Helper()
-
-	user, _, err := gitlabClient.Users.CurrentUser()
-	require.NoError(t, err)
-
-	emails, _, err := gitlabClient.Users.ListEmails()
-	require.NoError(t, err)
-
-	emailAddresses := make([]string, 0, len(emails))
-	for _, email := range emails {
-		emailAddresses = append(emailAddresses, email.Email)
-	}
-
-	return &app.User{
-		Name:      user.Name,
-		Emails:    emailAddresses,
-		CreatedAt: *user.CreatedAt,
-	}
+	return client
 }

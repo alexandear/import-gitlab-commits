@@ -62,6 +62,18 @@ To show the changes on GitHub you need to:
 - add remote url `git remote add origin git@github.com:username/yourcompany-contributions.git`;
 - push changes.
 
+### Integration Tests
+
+To run integration tests:
+
+1. Set `GITLAB_TOKEN` environment variables with the value obtained at <https://gitlab.com/-/user_settings/personal_access_tokens>. Necessary scopes:
+    - `read_api`;
+    - `read_user`;
+    - `read_repository`.
+
+2. Set `GITLAB_BASE_URL` with `https://gitlab.com`.
+3. Run `make test-integration`.
+
 ## License
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Falexandear%2Fimport-gitlab-commits.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Falexandear%2Fimport-gitlab-commits?ref=badge_large)
