@@ -25,6 +25,11 @@ test:
 	@echo test
 	@go test -shuffle=on -count=1 -race -v ./...
 
+.PHONY: test-integration
+test-integration:
+	@echo test-integration
+	@go test -tags=integration -run=TestGitLab -shuffle=on -count=1 -race -v ./...
+
 .PHONY: lint
 lint:
 	@echo lint

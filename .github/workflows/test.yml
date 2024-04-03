@@ -10,7 +10,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
+    env:
+        GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        GITLAB_BASE_URL: https://gitlab.com
     steps:
       - uses: actions/checkout@v4
 
@@ -20,3 +22,5 @@ jobs:
           check-latest: true
 
       - run: go test -v -count=1 -race -shuffle=on -cover ./...
+
+      - run: go test -tags=integration -run=TestGitLab -shuffle=on -count=1 -race -v ./...
