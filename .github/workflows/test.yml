@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
+        # Settings - Secrets and variables - Actions - New repository secret GITLAB_TOKEN
+        # Settings - Secrets and variables - Dependabot  - New repository secret GITLAB_TOKEN
         GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         GITLAB_BASE_URL: https://gitlab.com
     steps:
