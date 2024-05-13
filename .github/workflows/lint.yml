@@ -22,7 +22,7 @@ jobs:
           go-version: 'stable'
           check-latest: true
 
-      - uses: golangci/golangci-lint-action@v5
+      - uses: golangci/golangci-lint-action@v6
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --verbose --timeout 5m
