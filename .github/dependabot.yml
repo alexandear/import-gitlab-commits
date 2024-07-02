@@ -4,8 +4,10 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-      day: "sunday"
-      time: "11:00"
+  - package-ecosystem: gomod
+    directory: "/tools"
+    schedule:
+      interval: weekly
   - package-ecosystem: github-actions
     directory: "/"
     schedule:

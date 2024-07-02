@@ -5,7 +5,7 @@ export GOBIN := $(MAKEFILE_PATH)/bin
 
 PATH := $(GOBIN):$(PATH)
 
-GOLANGCI_LINT_VERSION=$(shell awk '/GOLANGCI_LINT_VERSION:/ { print $$2 }' .github/workflows/lint.yml)
+GOLANGCI_LINT_VERSION ?= $(shell cd tools; go list -m -f '{{.Version}}' github.com/golangci/golangci-lint)
 
 .PHONY: all
 all: clean format build lint test
@@ -35,6 +35,10 @@ lint:
 	@echo lint
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	@$(GOBIN)/golangci-lint run
+
+.PHONY: gh-lint-version
+gh-lint-version:
+	@echo "GOLANGCI_LINT_VERSION=$(GOLANGCI_LINT_VERSION)"
 
 .PHONY: format
 format:
