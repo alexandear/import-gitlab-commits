@@ -1,7 +1,6 @@
 # Import GitLab Commits
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/alexandear/import-gitlab-commits)](https://goreportcard.com/report/github.com/alexandear/import-gitlab-commits)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Falexandear%2Fimport-gitlab-commits.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Falexandear%2Fimport-gitlab-commits?ref=badge_shield)
 
 The tool to import commits from private GitLab to separate repo. Can be used to show your programming activity for another company in GitHub.
 
@@ -73,7 +72,3 @@ To run integration tests:
 
 2. Set `GITLAB_BASE_URL` with `https://gitlab.com`.
 3. Run `make test-integration`.
-
-## License
-
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Falexandear%2Fimport-gitlab-commits.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Falexandear%2Fimport-gitlab-commits?ref=badge_large)
