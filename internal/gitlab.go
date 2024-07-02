@@ -130,9 +130,11 @@ func (s *GitLab) FetchCommits(ctx context.Context, user *User, projectID int, si
 ) ([]*Commit, error) {
 	commits := make([]*Commit, 0, maxCommits)
 
+	const commitsPerPage = 100
+
 	page := 1
 	for page > 0 {
-		cms, nextPage, err := s.fetchCommitPage(ctx, user, page, 100, since, projectID)
+		cms, nextPage, err := s.fetchCommitPage(ctx, user, page, commitsPerPage, since, projectID)
 		if err != nil {
 			return nil, fmt.Errorf("fetch one commit page: %w", err)
 		}
