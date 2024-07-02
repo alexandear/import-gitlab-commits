@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  GOLANGCI_LINT_VERSION: v1.57.2
-
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -22,7 +19,11 @@ jobs:
           go-version: 'stable'
           check-latest: true
 
+      - id: golangci-lint-version
+        run: |
+          make gh-lint-version >> $GITHUB_OUTPUT
+
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          version: ${{ steps.golangci-lint-version.outputs.GOLANGCI_LINT_VERSION }}
           args: --verbose --timeout 5m
