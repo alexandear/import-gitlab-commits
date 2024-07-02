@@ -13,7 +13,10 @@ linters-settings:
     disable-dec-order-check: false
     disable-init-func-first-check: false
   gci:
-    local-prefixes: github.com/alexandear/import-gitlab-commits
+    sections:
+      - standard
+      - default
+      - prefix(github.com/alexandear/import-gitlab-commits)
   goconst:
     min-len: 2
     min-occurrences: 2
@@ -48,21 +51,11 @@ linters:
   enable-all: true
   disable:
     - depguard
-    - maligned
-    - exhaustivestruct
     - exhaustruct
+    - err113
     - nonamedreturns
     - gomnd
-    - nosnakecase
-    - interfacer
-    - varcheck
-    - ifshort
-    - structcheck
-    - deadcode
-    - scopelint
-    - golint
     - rowserrcheck
     - wastedassign
-    - goerr113
     - paralleltest
     - testpackage
