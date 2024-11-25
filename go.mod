@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/go-git/go-git/v5 v5.11.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/xanzy/go-gitlab v0.43.0
 )
 
