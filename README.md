@@ -38,11 +38,19 @@ where
 
 Contributions before running `import-gitlab-commits`:
 
-<img alt="Screenshot of GitHub contributions before running import-gitlab-commits" src="./screenshots/contribs_before.png" width="1000">
+<picture>
+ <source media="(prefers-color-scheme: dark)" srcset="screenshots/contribs_before_dark.png">
+ <source media="(prefers-color-scheme: light)" srcset="screenshots/contribs_before_light.png">
+ <img alt="Screenshot of GitHub contributions graph before running import-gitlab-commits" src="screenshots/contribs_before_dark.png" width="1000">
+</picture>
 
 After:
 
-<img alt="Screenshot of GitHub contributions after running import-gitlab-commits with new activity" src="./screenshots/contribs_after.png" width="1000">
+<picture>
+ <source media="(prefers-color-scheme: dark)" srcset="screenshots/contribs_after_dark.png">
+ <source media="(prefers-color-scheme: light)" srcset="screenshots/contribs_after_light.png">
+ <img alt="Screenshot of GitHub contributions graph after running import-gitlab-commits with a lot of activity" src="screenshots/contribs_after_dark.png" width="1000">
+</picture>
 
 ## Internals
 
