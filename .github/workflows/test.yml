@@ -21,7 +21,6 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 'stable'
-          check-latest: true
 
       - run: go test -v -count=1 -race -shuffle=on -cover ./...
 
