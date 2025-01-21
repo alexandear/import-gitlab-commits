@@ -8,7 +8,7 @@ Check out this informative blog post for a practical use case on how to import G
 
 ## Getting Started
 
-1. Download and install [Go 1.22](https://go.dev/dl/).
+1. Download and install [Go](https://go.dev/dl/).
 2. Install the program by running the command in a shell:
 
     ```shell
