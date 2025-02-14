@@ -5,7 +5,8 @@ go 1.22
 require (
 	github.com/go-git/go-git/v5 v5.13.1
 	github.com/stretchr/testify v1.10.0
-	github.com/xanzy/go-gitlab v0.43.0
+    // TODO: migrate to gitlab.com/gitlab-org/api/client-go alexandear/import-gitlab-commits#106
+	github.com/xanzy/go-gitlab v0.43.0 // TODO: migrate to gitlab.com/gitlab-org/api/client-go #106
 )
 
 require (
