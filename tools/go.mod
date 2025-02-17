@@ -1,6 +1,6 @@
 module github.com/alexandear/import-gitlab-commits/tools
 
 go 1.22
-toolchain go1.22.5
+toolchain go1.23.6
 
-require github.com/golangci/golangci-lint v1.63.4
+require github.com/golangci/golangci-lint v1.64.5
