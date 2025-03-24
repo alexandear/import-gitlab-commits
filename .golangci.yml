@@ -44,18 +44,25 @@ linters-settings:
     line-length: 140
   misspell:
     locale: US
-  tenv:
-    all: true
+  usetesting:
+    context-background: true
+    context-todo: true
+    os-chdir: true
+    os-mkdir-temp: true
+    os-setenv: true
+    os-create-temp: true
+    os-temp-dir: true
 
 linters:
   enable-all: true
   disable:
     - depguard
-    - exhaustruct
     - err113
-    - nonamedreturns
+    - exhaustruct
     - gomnd
-    - rowserrcheck
-    - wastedassign
+    - nonamedreturns
     - paralleltest
+    - rowserrcheck
+    - tenv
     - testpackage
+    - wastedassign
