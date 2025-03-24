@@ -26,5 +26,4 @@ jobs:
       - uses: golangci/golangci-lint-action@v6
         with:
           version: ${{ steps.golangci-lint-version.outputs.GOLANGCI_LINT_VERSION }}
-          verify: false
           args: --verbose
