@@ -30,12 +30,8 @@ test-integration:
 	@echo test-integration
 	@go test -tags=integration -run=TestGitLab -shuffle=on -count=1 -race -v ./...
 
-.PHONY: golangci-lint-version
-golangci-lint-version:
-	@echo golangci-lint version $(GOLANGCI_LINT_VERSION)
-
 .PHONY: lint
-lint: golangci-lint-version $(GOBIN)/golangci-lint
+lint: gh-lint-version $(GOBIN)/golangci-lint
 	@echo lint
 	@$(GOBIN)/golangci-lint run
 
