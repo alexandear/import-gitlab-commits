@@ -1,68 +1,177 @@
+version: "2"
 run:
-  concurrency: 8
   issues-exit-code: 1
   tests: true
-
-linters-settings:
-  decorder:
-    dec-order:
-      - const
-      - type
-      - var
-      - func
-    disable-dec-order-check: false
-    disable-init-func-first-check: false
-  gci:
-    sections:
-      - standard
-      - default
-      - prefix(github.com/alexandear/import-gitlab-commits)
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-  gocognit:
-    min-complexity: 15
-  gocyclo:
-    min-complexity: 10
-  godot:
-    scope: all
-    capital: true
-  gofumpt:
-    extra-rules: true
-  govet:
-    enable-all: true
-    disable:
-      - fieldalignment
-  lll:
-    line-length: 140
-  misspell:
-    locale: US
-  usetesting:
-    context-background: true
-    context-todo: true
-    os-chdir: true
-    os-mkdir-temp: true
-    os-setenv: true
-    os-create-temp: true
-    os-temp-dir: true
-
 linters:
-  enable-all: true
+  default: all
   disable:
     - depguard
     - err113
     - exhaustruct
-    - gomnd
+    - mnd
     - nonamedreturns
     - paralleltest
     - rowserrcheck
-    - tenv
-    - testpackage
     - wastedassign
+  settings:
+    decorder:
+      dec-order:
+        - const
+        - type
+        - var
+        - func
+      disable-dec-order-check: false
+      disable-init-func-first-check: false
+    gocognit:
+      min-complexity: 15
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    gocritic:
+      enable-all: true
+    gocyclo:
+      min-complexity: 10
+    godot:
+      scope: all
+      capital: true
+    govet:
+      disable:
+        - fieldalignment
+      enable-all: true
+    lll:
+      line-length: 140
+    misspell:
+      locale: US
+    revive:
+      # Set below 0.8 to enable error-strings
+      confidence: 0.6
+      rules:
+        - name: add-constant
+          disabled: true
+        - name: argument-limit
+        - name: atomic
+        - name: banned-characters
+        - name: bare-return
+        - name: blank-imports
+        - name: bool-literal-in-expr
+        - name: call-to-gc
+        - name: comment-spacings
+        - name: confusing-naming
+        - name: confusing-results
+        - name: constant-logical-expr
+        - name: context-as-argument
+          arguments:
+            # allow functions with signature: func foo(t *testing.T, ctx context.Context)
+            - allowTypesBefore: "*testing.T"
+        - name: context-keys-type
+        - name: datarace
+        - name: deep-exit
+        - name: defer
+        - name: dot-imports
+        - name: duplicated-imports
+        - name: early-return
+        - name: empty-block
+        - name: empty-lines
+        - name: error-naming
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: enforce-map-style
+        - name: enforce-repeated-arg-type-style
+        - name: enforce-slice-style
+        - name: exported
+        - name: file-header
+        - name: file-length-limit
+        - name: filename-format
+          arguments:
+            - "^[_a-z][_a-z0-9]*.go$"
+        - name: flag-parameter
+        - name: function-length
+        - name: function-result-limit
+        - name: get-return
+        - name: identical-branches
+        - name: if-return
+        - name: import-alias-naming
+        - name: import-shadowing
+        - name: imports-blocklist
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: line-length-limit
+          arguments:
+            - 120
+        - name: max-control-nesting
+        - name: max-public-structs
+        - name: modifies-parameter
+        - name: modifies-value-receiver
+        - name: nested-structs
+        - name: optimize-operands-order
+        - name: package-comments
+        - name: range-val-address
+        - name: range-val-in-closure
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: redundant-build-tag
+        - name: redundant-import-alias
+        - name: string-format
+        - name: string-of-int
+        - name: struct-tag
+          arguments:
+            - "json,inline"
+        - name: superfluous-else
+        - name: time-equal
+        - name: time-naming
+        - name: unchecked-type-assertion
+        - name: unconditional-recursion
+        - name: unexported-naming
+        - name: unexported-return
+        - name: unhandled-error
+        - name: unnecessary-stmt
+        - name: unreachable-code
+        - name: unused-parameter
+        - name: unused-receiver
+        - name: use-any
+        - name: use-errors-new
+        - name: useless-break
+        - name: var-declaration
+        - name: var-naming
+        - name: waitgroup-by-value
+    usetesting:
+      context-background: true
+      context-todo: true
+      os-chdir: true
+      os-mkdir-temp: true
+      os-setenv: true
+      os-temp-dir: true
+      os-create-temp: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/alexandear/import-gitlab-commits)
+    gofumpt:
+      extra-rules: true
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

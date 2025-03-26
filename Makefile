@@ -5,7 +5,7 @@ export GOBIN := $(MAKEFILE_PATH)/bin
 
 PATH := $(GOBIN):$(PATH)
 
-GOLANGCI_LINT_VERSION ?= $(shell cd tools; go list -m -f '{{.Version}}' github.com/golangci/golangci-lint)
+GOLANGCI_LINT_VERSION ?= $(shell $(MAKE) -C tools golangci-lint-version)
 
 .PHONY: all
 all: clean format build lint test
@@ -31,10 +31,12 @@ test-integration:
 	@go test -tags=integration -run=TestGitLab -shuffle=on -count=1 -race -v ./...
 
 .PHONY: lint
-lint:
+lint: gh-lint-version $(GOBIN)/golangci-lint
 	@echo lint
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	@$(GOBIN)/golangci-lint run
+
+$(GOBIN)/golangci-lint:
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b "$(GOBIN)" "$(GOLANGCI_LINT_VERSION)"
 
 .PHONY: gh-lint-version
 gh-lint-version:

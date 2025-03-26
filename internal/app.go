@@ -12,7 +12,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	goGitlab "github.com/xanzy/go-gitlab"
+	gogitlab "github.com/xanzy/go-gitlab"
 )
 
 const (
@@ -40,7 +40,7 @@ type User struct {
 
 func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committerName, committerEmail string,
 ) (*App, error) {
-	gitlabClient, err := goGitlab.NewClient(gitlabToken, goGitlab.WithBaseURL(gitlabBaseURL.String()))
+	gitlabClient, err := gogitlab.NewClient(gitlabToken, gogitlab.WithBaseURL(gitlabBaseURL.String()))
 	if err != nil {
 		return nil, fmt.Errorf("create GitLab client: %w", err)
 	}
