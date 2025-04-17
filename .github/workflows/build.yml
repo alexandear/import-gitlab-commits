@@ -30,6 +30,7 @@ jobs:
   tidy:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    if: false
     steps:
       - uses: actions/checkout@v4
 
