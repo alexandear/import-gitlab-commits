@@ -12,7 +12,6 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    if: false # disable for now
     timeout-minutes: 5
 
     steps:

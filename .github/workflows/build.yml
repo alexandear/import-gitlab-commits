@@ -27,4 +27,15 @@ jobs:
 
       - run: go mod verify
 
-      - run: go build -o /dev/null ./...
+  tidy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          check-latest: true
+
+      - run: go mod tidy && git diff --exit-code
