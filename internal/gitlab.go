@@ -44,6 +44,11 @@ func (s *GitLab) CurrentUser(ctx context.Context) (*User, error) {
 		emailAddresses = append(emailAddresses, email.Email)
 	}
 
+	if len(emailAddresses) == 0 {
+		log.Printf("No emails returned from ListEmails; using fallback user.Email: %s", user.Email)
+		emailAddresses = []string{user.Email}
+	}
+
 	return &User{
 		Name:      user.Name,
 		Emails:    emailAddresses,
