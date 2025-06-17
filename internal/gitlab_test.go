@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/xanzy/go-gitlab"
+	"gitlab.com/gitlab-org/api/client-go"
 
 	app "github.com/alexandear/import-gitlab-commits/internal"
 	"github.com/alexandear/import-gitlab-commits/internal/testutil"
