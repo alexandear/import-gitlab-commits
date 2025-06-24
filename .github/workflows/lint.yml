@@ -24,7 +24,7 @@ jobs:
 
       - id: golangci-lint-version
         run: |
-          make gh-lint-version >> $GITHUB_OUTPUT
+          echo "GOLANGCI_LINT_VERSION=$(go tool -modfile=tools/go.mod golangci-lint version --short)" >> $GITHUB_OUTPUT
 
       - uses: golangci/golangci-lint-action@v8
         with:
