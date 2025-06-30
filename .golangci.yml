@@ -82,6 +82,7 @@ linters:
         - name: enforce-repeated-arg-type-style
         - name: enforce-slice-style
         - name: exported
+          disabled: true
         - name: file-header
         - name: file-length-limit
         - name: filename-format
@@ -121,6 +122,7 @@ linters:
           arguments:
             - "json,inline"
         - name: superfluous-else
+        - name: time-date
         - name: time-equal
         - name: time-naming
         - name: unchecked-type-assertion
@@ -128,12 +130,14 @@ linters:
         - name: unexported-naming
         - name: unexported-return
         - name: unhandled-error
+        - name: unnecessary-format
         - name: unnecessary-stmt
         - name: unreachable-code
         - name: unused-parameter
         - name: unused-receiver
         - name: use-any
         - name: use-errors-new
+        - name: use-fmt-print
         - name: useless-break
         - name: var-declaration
         - name: var-naming
@@ -146,17 +150,26 @@ linters:
       os-setenv: true
       os-temp-dir: true
       os-create-temp: true
+    usestdlibvars:
+      http-method: true
+      http-status-code: true
+      time-weekday: true
+      time-month: true
+      time-layout: true
+      time-date-month: true
+      crypto-hash: true
+      default-rpc-path: true
+      sql-isolation-level: true
+      tls-signature-scheme: true
+      constant-kind: true
+    testifylint:
+      enable-all: true
   exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+    warn-unused: true
+    rules:
+      - linters:
+          - revive
+        source: "package main" # false positive
 formatters:
   enable:
     - gci
@@ -169,9 +182,3 @@ formatters:
         - prefix(github.com/alexandear/import-gitlab-commits)
     gofumpt:
       extra-rules: true
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$

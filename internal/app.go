@@ -1,3 +1,6 @@
+// Package app provides the core functionality for the import-gitlab-commits application,
+// including initializing the GitLab client, fetching user information,
+// and importing commits into a local git repository.
 package app
 
 import (
