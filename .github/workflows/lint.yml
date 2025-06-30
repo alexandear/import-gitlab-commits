@@ -28,5 +28,5 @@ jobs:
 
       - uses: golangci/golangci-lint-action@v8
         with:
-          version: ${{ steps.golangci-lint-version.outputs.GOLANGCI_LINT_VERSION }}
+          version: v${{ steps.golangci-lint-version.outputs.GOLANGCI_LINT_VERSION }}
           args: --verbose
