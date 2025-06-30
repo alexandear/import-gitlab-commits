@@ -9,10 +9,12 @@ linters:
     - err113
     - exhaustruct
     - mnd
+    - noinlineerr
     - nonamedreturns
     - paralleltest
     - rowserrcheck
     - wastedassign
+    - wsl
   settings:
     decorder:
       dec-order:
