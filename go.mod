@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/go-git/go-git/v5 v5.13.1
 	github.com/stretchr/testify v1.10.0
-	gitlab.com/gitlab-org/api/client-go v0.133.0
+	gitlab.com/gitlab-org/api/client-go v0.134.0
 )
 
 require (
