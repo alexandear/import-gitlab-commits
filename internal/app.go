@@ -68,7 +68,7 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("get current user: %w", err)
 	}
 
-	a.logger.Printf("Found current user %q", currentUser.Name)
+	a.logger.Printf("Found current user %q with emails: %v", currentUser.Name, currentUser.Emails)
 
 	repoPath := "./" + repoName(a.gitlabBaseURL, currentUser)
 
@@ -95,20 +95,34 @@ func (a *App) Run(ctx context.Context) error {
 			return fmt.Errorf("fetch projects: %w", errFetch)
 		}
 
+		a.logger.Printf("Found %d projects on page %d", len(projects), page)
+
 		for _, project := range projects {
 			commits, errCommit := a.doCommitsForProject(ctx, worktree, currentUser, project, lastCommitDate)
 			if errCommit != nil {
 				return fmt.Errorf("do commits: %w", errCommit)
 			}
 
-			projectCommitCounter[projectID] = commits
+			projectCommitCounter[project] = commits
 		}
 
 		page = nextPage
 	}
 
-	for project, commit := range projectCommitCounter {
-		a.logger.Printf("project %d: commits %d", project, commit)
+	totalProjects := len(projectCommitCounter)
+	totalCommits := 0
+	for project, commits := range projectCommitCounter {
+		a.logger.Printf("project %d: commits %d", project, commits)
+		totalCommits += commits
+	}
+
+	a.logger.Printf("Total: %d projects processed, %d commits imported", totalProjects, totalCommits)
+
+	if totalCommits == 0 {
+		a.logger.Printf("No commits were imported. This could be because:")
+		a.logger.Printf("1. You have no projects with contributions")
+		a.logger.Printf("2. Your commits don't match your GitLab email addresses: %v", currentUser.Emails)
+		a.logger.Printf("3. All commits are older than the last imported commit date")
 	}
 
 	return nil

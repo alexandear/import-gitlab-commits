@@ -80,12 +80,17 @@ func (s *GitLab) FetchProjectPage(ctx context.Context, page int, user *User, idA
 		return nil, 0, fmt.Errorf("list projects: %w", err)
 	}
 
+	s.logger.Printf("Found %d projects on page %d", len(projs), page)
+
 	for _, proj := range projs {
+		s.logger.Printf("Checking project: %d (%s)", proj.ID, proj.Name)
+		
 		if !s.HasUserContributions(ctx, user, proj.ID) {
+			s.logger.Printf("User has no contributions to project %d, skipping", proj.ID)
 			continue
 		}
 
-		s.logger.Printf("Fetching project: %d", proj.ID)
+		s.logger.Printf("User has contributions to project: %d (%s)", proj.ID, proj.Name)
 
 		projects = append(projects, proj.ID)
 	}
@@ -179,11 +184,16 @@ func (s *GitLab) fetchCommitPage(
 	}
 
 	for _, comm := range comms {
-		if !contains(user.Emails, comm.AuthorEmail) || !contains(user.Emails, comm.CommitterEmail) {
+		// Check if either the author email OR committer email matches (not both required)
+		authorMatches := contains(user.Emails, comm.AuthorEmail)
+		committerMatches := contains(user.Emails, comm.CommitterEmail)
+		
+		if !authorMatches && !committerMatches {
 			continue
 		}
 
-		s.logger.Printf("fetching commit: %s %s", comm.ShortID, comm.CommittedDate)
+		s.logger.Printf("including commit: %s %s (author: %s, committer: %s)", 
+			comm.ShortID, comm.CommittedDate, comm.AuthorEmail, comm.CommitterEmail)
 
 		commits = append(commits, NewCommit(*comm.CommittedDate, projectID, comm.ID))
 	}
