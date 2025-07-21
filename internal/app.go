@@ -86,11 +86,11 @@ func (a *App) Run(ctx context.Context) error {
 
 	projectCommitCounter := make(map[int]int, maxProjects)
 
-	projectID := 0
+	idAfter := 0
 	page := 1
 
 	for page > 0 {
-		projects, nextPage, errFetch := a.gitlab.FetchProjectPage(ctx, page, currentUser, projectID)
+		projects, nextPage, errFetch := a.gitlab.FetchProjectPage(ctx, page, currentUser, idAfter)
 		if errFetch != nil {
 			return fmt.Errorf("fetch projects: %w", errFetch)
 		}
@@ -101,7 +101,12 @@ func (a *App) Run(ctx context.Context) error {
 				return fmt.Errorf("do commits: %w", errCommit)
 			}
 
-			projectCommitCounter[projectID] = commits
+			projectCommitCounter[project] = commits
+
+			// Update idAfter to the highest project ID seen so far for cursor-based pagination.
+			if project > idAfter {
+				idAfter = project
+			}
 		}
 
 		page = nextPage
