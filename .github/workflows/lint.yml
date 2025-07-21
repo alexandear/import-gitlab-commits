@@ -24,9 +24,9 @@ jobs:
 
       - id: golangci-lint-version
         run: |
-          echo "GOLANGCI_LINT_VERSION=$(go tool -modfile=tools/go.mod golangci-lint version --short)" >> $GITHUB_OUTPUT
+          echo "GOLANGCI_LINT_VERSION=$(go list -modfile=tools/go.mod -m -f '{{.Version}}' github.com/golangci/golangci-lint/v2)" >> $GITHUB_OUTPUT
 
       - uses: golangci/golangci-lint-action@v8
         with:
-          version: v${{ steps.golangci-lint-version.outputs.GOLANGCI_LINT_VERSION }}
+          version: ${{ steps.golangci-lint-version.outputs.GOLANGCI_LINT_VERSION }}
           args: --verbose
