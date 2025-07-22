@@ -1,14 +1,11 @@
 version: 2
 updates:
   - package-ecosystem: gomod
-    directory: "/"
+    directories:
+      - "/"
+      - "/tools"
     schedule:
       interval: weekly
-  - package-ecosystem: gomod
-    directory: "/tools"
-    schedule:
-      interval: cron
-      cronjob: "* * * * *"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
