@@ -2,7 +2,7 @@ module github.com/alexandear/import-gitlab-commits/tools
 
 go 1.24.0
 
-require github.com/golangci/golangci-lint/v2 v2.2.1 // indirect
+require github.com/golangci/golangci-lint/v2 v2.2.1
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.3.0 // indirect

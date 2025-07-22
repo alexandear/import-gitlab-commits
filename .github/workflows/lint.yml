@@ -22,9 +22,13 @@ jobs:
           go-version: 'stable'
           check-latest: true
 
+      - working-directory: tools
+        run: go mod tidy && git diff --exit-code
+
       - id: golangci-lint-version
+        working-directory: tools
         run: |
-          echo "GOLANGCI_LINT_VERSION=$(go list -modfile=tools/go.mod -m -f '{{.Version}}' github.com/golangci/golangci-lint/v2)" >> $GITHUB_OUTPUT
+          echo "GOLANGCI_LINT_VERSION=$(go list -m -f '{{.Version}}' github.com/golangci/golangci-lint/v2)" >> $GITHUB_OUTPUT
 
       - uses: golangci/golangci-lint-action@v8
         with:
