@@ -21,7 +21,7 @@ jobs:
           go-version: 'stable'
           check-latest: true
 
-      - run: go mod tidy && git diff --exit-code
+      - run: go mod tidy -diff
 
       - run: go mod download
 
