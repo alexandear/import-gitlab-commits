@@ -20,7 +20,7 @@ jobs:
           check-latest: true
 
       - working-directory: tools
-        run: go mod tidy && git diff --exit-code
+        run: go mod tidy -diff
 
       - id: golangci-lint-version
         working-directory: tools
