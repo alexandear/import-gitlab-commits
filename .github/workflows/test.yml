@@ -23,6 +23,16 @@ jobs:
           go-version: 'stable'
           check-latest: true
 
-      - run: go test -v -count=1 -race -shuffle=on -cover ./...
+      - name: Install binary
+        run: go install
 
-      - run: go test -tags=integration -run=TestGitLab -shuffle=on -count=1 -race -v ./...
+      - name: Smoke tests
+        run: |
+          import-gitlab-commits -h
+          import-gitlab-commits --help
+
+      - name: Unit tests
+        run: go test -v -count=1 -race -shuffle=on -cover ./...
+
+      - name: Integration tests
+        run: go test -tags=integration -run=TestGitLab -shuffle=on -count=1 -race -v ./...

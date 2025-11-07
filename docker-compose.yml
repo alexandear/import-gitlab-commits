@@ -1,0 +1,14 @@
+services:
+  import-gitlab-commits:
+    build: .
+    container_name: import-gitlab-commits
+    env_file:
+      - .env
+    environment:
+      - GITLAB_BASE_URL=${GITLAB_BASE_URL:-https://gitlab.com}
+      - GITLAB_TOKEN=${GITLAB_TOKEN}
+      - COMMITTER_NAME=${COMMITTER_NAME}
+      - COMMITTER_EMAIL=${COMMITTER_EMAIL}
+    volumes:
+      - ./output:/root
+    restart: "no"

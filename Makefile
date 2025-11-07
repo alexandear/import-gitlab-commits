@@ -18,6 +18,22 @@ build:
 	@echo build
 	@go build -o $(GOBIN)/import-gitlab-commits
 
+.PHONY: docker-build
+docker-build:
+	@echo docker-build
+	@docker build -t github.com/alexandear/import-gitlab-commits .
+
+.PHONY: docker-run
+docker-run: docker-build
+	@echo docker-run
+	@docker run --rm \
+		-e GITLAB_BASE_URL="${GITLAB_BASE_URL}" \
+		-e GITLAB_TOKEN="${GITLAB_TOKEN}" \
+		-e COMMITTER_NAME="${COMMITTER_NAME}" \
+		-e COMMITTER_EMAIL="${COMMITTER_EMAIL}" \
+		-v $$(pwd)/output:/root \
+		github.com/alexandear/import-gitlab-commits
+
 .PHONY: test
 test:
 	@echo test
