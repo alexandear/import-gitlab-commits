@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net/url"
@@ -14,6 +15,23 @@ import (
 
 const (
 	runTimeout = 10 * time.Minute
+
+	helpText = `Import GitLab Commits
+
+Imports commits from a private GitLab repository to a separate repository.
+
+Usage:
+  import-gitlab-commits [flags]
+
+Flags:
+  -h, --help    Show help message
+
+Environment Variables:
+  GITLAB_BASE_URL     GitLab instance URL (e.g., https://gitlab.com)
+  GITLAB_TOKEN        GitLab personal access token (scopes: read_api, read_user, read_repository)
+  COMMITTER_NAME      Your full name (e.g., John Doe)
+  COMMITTER_EMAIL     Your email (e.g., john.doe@example.com)
+`
 )
 
 func Execute(logger *log.Logger) error {
@@ -53,6 +71,15 @@ func Execute(logger *log.Logger) error {
 }
 
 func main() {
+	help := flag.Bool("help", false, "Show help message")
+	flag.BoolVar(help, "h", false, "Show help message (shorthand)")
+	flag.Parse()
+
+	if *help {
+		_, _ = os.Stdout.WriteString(helpText)
+		os.Exit(0)
+	}
+
 	logger := log.New(os.Stdout, "", log.Lshortfile|log.Ltime)
 
 	if err := Execute(logger); err != nil {
