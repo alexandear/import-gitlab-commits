@@ -77,6 +77,7 @@ func main() {
 
 	if *help {
 		_, _ = os.Stdout.WriteString(helpText)
+
 		os.Exit(0)
 	}
 

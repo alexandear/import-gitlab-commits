@@ -9,7 +9,7 @@ on:
     - cron: '0 8 * * 1' # run "At 8:00 on Monday"
 
 jobs:
-  go:
+  run:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
