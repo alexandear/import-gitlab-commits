@@ -92,7 +92,7 @@ Run:
     $(go env GOPATH)/bin/import-gitlab-commits
     ```
 
-`$(go env GOPATH)/bin/` is the path where `import-gitlab-commits` is installed.
+Where `$(go env GOPATH)/bin/` is the path where `import-gitlab-commits` is installed.
 
 ## Configuration
 
@@ -126,7 +126,6 @@ To display the changes on GitHub, you need to:
 To run integration tests:
 
 1. Set the `GITLAB_TOKEN` environment variable with the value obtained at <https://gitlab.com/-/user_settings/personal_access_tokens>. Necessary scopes:
-
     - `read_api`
     - `read_user`
     - `read_repository`
