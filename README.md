@@ -45,7 +45,6 @@ Run the tool using Docker Compose:
 3. Build and run with [Docker Compose](https://docs.docker.com/compose/install/):
 
     ```shell
-    docker compose build
     docker compose up
     ```
 
@@ -55,13 +54,22 @@ The imported repository will be created in the `output/` directory.
 
 If you prefer plain Docker:
 
-    ```shell
-    export GITLAB_BASE_URL=https://gitlab.com
-    export GITLAB_TOKEN=<your_gitlab_token>
-    export COMMITTER_NAME="John Doe"
-    export COMMITTER_EMAIL=john.doe@example.com
+Build:
 
-    make docker-run
+    ```shell
+    docker build -t github.com/alexandear/import-gitlab-commits .
+    ```
+
+Run:
+
+    ```shell
+    docker run --rm \
+        -e GITLAB_BASE_URL="https://gitlab.com" \
+        -e GITLAB_TOKEN="<your_gitlab_token>" \
+        -e COMMITTER_NAME="John Doe" \
+        -e COMMITTER_EMAIL="john.doe@example.com" \
+        -v $(pwd)/output:/root \
+        github.com/alexandear/import-gitlab-commits
     ```
 
 ### Using native Go build
