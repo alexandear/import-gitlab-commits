@@ -1,7 +1,7 @@
 .git
 .gitignore
 
-output/
+/output/
 repos/
 git-cache/
 
@@ -26,4 +26,4 @@ Thumbs.db
 testdata/
 
 tools/
-
+Makefile

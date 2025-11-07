@@ -4,4 +4,4 @@ bin/
 repo\.*
 \.vscode
 \.env
-output/
+/output
