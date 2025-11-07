@@ -32,6 +32,8 @@ You can run the tool with Docker or a native Go build.
 
 ## Docker Usage
 
+### Docker Compose
+
 Run the tool using Docker Compose:
 
 1. Copy the environment variables template:
@@ -44,33 +46,31 @@ Run the tool using Docker Compose:
 
 3. Build and run with [Docker Compose](https://docs.docker.com/compose/install/):
 
-    ```shell
-    docker compose up
-    ```
+```shell
+docker compose up
+```
 
 The imported repository will be created in the `output/` directory.
 
-### Docker Build Only
-
-If you prefer plain Docker:
+### Plain Docker
 
 Build:
 
-    ```shell
-    docker build -t github.com/alexandear/import-gitlab-commits .
-    ```
+```shell
+docker build -t github.com/alexandear/import-gitlab-commits .
+```
 
 Run:
 
-    ```shell
-    docker run --rm \
-        -e GITLAB_BASE_URL="https://gitlab.com" \
-        -e GITLAB_TOKEN="<your_gitlab_token>" \
-        -e COMMITTER_NAME="John Doe" \
-        -e COMMITTER_EMAIL="john.doe@example.com" \
-        -v $(pwd)/output:/root \
-        github.com/alexandear/import-gitlab-commits
-    ```
+```shell
+docker run --rm \
+    -e GITLAB_BASE_URL="https://gitlab.com" \
+    -e GITLAB_TOKEN="<your_gitlab_token>" \
+    -e COMMITTER_NAME="John Doe" \
+    -e COMMITTER_EMAIL="john.doe@example.com" \
+    -v $(pwd)/output:/root \
+    github.com/alexandear/import-gitlab-commits
+```
 
 ### Using native Go build
 
