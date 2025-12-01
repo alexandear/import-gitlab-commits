@@ -85,8 +85,7 @@ func (a *App) Run(ctx context.Context) error {
 	lastCommitDate := a.lastCommitDate(repo)
 
 	projectCommitCounter := make(map[int64]int, maxProjects)
-
-	var projectID int64
+	projectID := int64(0)
 	page := int64(1)
 
 	for page > 0 {
