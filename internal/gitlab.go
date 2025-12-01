@@ -57,11 +57,11 @@ func (s *GitLab) CurrentUser(ctx context.Context) (*User, error) {
 	}, nil
 }
 
-func (s *GitLab) FetchProjectPage(ctx context.Context, page int, user *User, idAfter int,
-) (_ []int, nextPage int, _ error) {
+func (s *GitLab) FetchProjectPage(ctx context.Context, page int64, user *User, idAfter int64,
+) (_ []int64, nextPage int64, _ error) {
 	const perPage = 100
 
-	projects := make([]int, 0, perPage)
+	projects := make([]int64, 0, perPage)
 
 	opt := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
@@ -97,7 +97,7 @@ func (s *GitLab) FetchProjectPage(ctx context.Context, page int, user *User, idA
 	return projects, resp.NextPage, nil
 }
 
-func (s *GitLab) HasUserContributions(ctx context.Context, user *User, projectID int) bool {
+func (s *GitLab) HasUserContributions(ctx context.Context, user *User, projectID int64) bool {
 	const perPage = 50
 
 	opt := &gitlab.ListContributorsOptions{
@@ -131,13 +131,13 @@ func (s *GitLab) HasUserContributions(ctx context.Context, user *User, projectID
 	return false
 }
 
-func (s *GitLab) FetchCommits(ctx context.Context, user *User, projectID int, since time.Time,
+func (s *GitLab) FetchCommits(ctx context.Context, user *User, projectID int64, since time.Time,
 ) ([]*Commit, error) {
 	commits := make([]*Commit, 0, maxCommits)
 
 	const commitsPerPage = 100
 
-	page := 1
+	page := int64(1)
 	for page > 0 {
 		cms, nextPage, err := s.fetchCommitPage(ctx, user, page, commitsPerPage, since, projectID)
 		if err != nil {
@@ -157,8 +157,8 @@ func (s *GitLab) FetchCommits(ctx context.Context, user *User, projectID int, si
 }
 
 func (s *GitLab) fetchCommitPage(
-	ctx context.Context, user *User, page, perPage int, since time.Time, projectID int,
-) (commits []*Commit, nextPage int, err error) {
+	ctx context.Context, user *User, page, perPage int64, since time.Time, projectID int64,
+) (commits []*Commit, nextPage int64, err error) {
 	commits = make([]*Commit, 0, perPage)
 
 	opt := &gitlab.ListCommitsOptions{

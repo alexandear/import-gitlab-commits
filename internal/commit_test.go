@@ -16,7 +16,7 @@ func TestNewCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	projectID := 2323
+	projectID := int64(2323)
 	hash := "9bc457f81c86307f28662b40a164105f14df64e3"
 
 	commit := app.NewCommit(committedAt, projectID, hash)
@@ -33,7 +33,7 @@ func TestParseCommitMessage(t *testing.T) {
 		projectID, hash, err := app.ParseCommitMessage(msg)
 
 		require.NoError(t, err)
-		assert.Equal(t, 2323, projectID)
+		assert.Equal(t, int64(2323), projectID)
 		assert.Equal(t, "9bc457f81c86307f28662b40a164105f14df64e3", hash)
 	})
 

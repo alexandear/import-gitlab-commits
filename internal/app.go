@@ -84,10 +84,10 @@ func (a *App) Run(ctx context.Context) error {
 
 	lastCommitDate := a.lastCommitDate(repo)
 
-	projectCommitCounter := make(map[int]int, maxProjects)
+	projectCommitCounter := make(map[int64]int, maxProjects)
 
-	projectID := 0
-	page := 1
+	var projectID int64
+	page := int64(1)
 
 	for page > 0 {
 		projects, nextPage, errFetch := a.gitlab.FetchProjectPage(ctx, page, currentUser, projectID)
@@ -168,7 +168,7 @@ func (a *App) lastCommitDate(repo *git.Repository) time.Time {
 }
 
 func (a *App) doCommitsForProject(
-	ctx context.Context, worktree *git.Worktree, currentUser *User, projectID int, lastCommitDate time.Time,
+	ctx context.Context, worktree *git.Worktree, currentUser *User, projectID int64, lastCommitDate time.Time,
 ) (int, error) {
 	commits, err := a.gitlab.FetchCommits(ctx, currentUser, projectID, lastCommitDate)
 	if err != nil {
