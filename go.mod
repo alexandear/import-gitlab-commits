@@ -3,7 +3,7 @@ module github.com/alexandear/import-gitlab-commits
 go 1.25.0
 
 require (
-	github.com/go-git/go-git/v5 v5.17.0
+	github.com/go-git/go-git/v5 v5.17.1
 	github.com/stretchr/testify v1.11.1
 	gitlab.com/gitlab-org/api/client-go v1.46.0
 )
