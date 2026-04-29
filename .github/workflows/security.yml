@@ -2,8 +2,8 @@ name: Security Scan
 
 on:
   schedule:
-    # Every Monday at 1PM UTC
-    - cron: "0 13 * * 1"
+    # Once a month on the 1st at 1PM UTC
+    - cron: "0 13 1 * *"
   push:
     branches: [main]
   pull_request:
