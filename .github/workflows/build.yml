@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: '0 8 * * 1' # run "At 8:00 on Monday"
+    - cron: '0 8 1 * *' # run "At 08:00 on day-of-month 1"
 
 jobs:
   run:

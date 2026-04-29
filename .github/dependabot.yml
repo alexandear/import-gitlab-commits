@@ -5,8 +5,8 @@ updates:
       - "/"
       - "/tools"
     schedule:
-      interval: weekly
+      interval: monthly
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
+      interval: monthly
