@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/gitlab-org/api/client-go"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 const (
@@ -68,11 +68,11 @@ func (s *GitLab) FetchProjectPage(ctx context.Context, page int64, user *User, i
 			Page:    page,
 			PerPage: perPage,
 		},
-		OrderBy:    gitlab.Ptr("id"),
-		Sort:       gitlab.Ptr("asc"),
-		Simple:     gitlab.Ptr(true),
-		Membership: gitlab.Ptr(true),
-		IDAfter:    gitlab.Ptr(idAfter),
+		OrderBy:    new("id"),
+		Sort:       new("asc"),
+		Simple:     new(true),
+		Membership: new(true),
+		IDAfter:    new(idAfter),
 	}
 
 	projs, resp, err := s.gitlabClient.Projects.ListProjects(opt, gitlab.WithContext(ctx))
@@ -166,11 +166,11 @@ func (s *GitLab) fetchCommitPage(
 			PerPage: perPage,
 			Page:    page,
 		},
-		All: gitlab.Ptr(true),
+		All: new(true),
 	}
 
 	if !since.IsZero() {
-		opt.Since = gitlab.Ptr(since)
+		opt.Since = &since
 	}
 
 	comms, resp, err := s.gitlabClient.Commits.ListCommits(projectID, opt, gitlab.WithContext(ctx))

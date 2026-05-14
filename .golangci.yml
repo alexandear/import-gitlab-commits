@@ -8,6 +8,7 @@ linters:
     - depguard
     - err113
     - exhaustruct
+    - gomodguard
     - mnd
     - noinlineerr
     - nonamedreturns
@@ -170,6 +171,9 @@ linters:
       - linters:
           - revive
         source: "package main" # false positive
+      - linters:
+          - goconst
+        path: "_test.go$"
 formatters:
   enable:
     - gci
