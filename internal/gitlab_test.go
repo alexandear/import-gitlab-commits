@@ -3,13 +3,12 @@
 package app_test
 
 import (
-	"context"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/gitlab-org/api/client-go"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 
 	app "github.com/alexandear/import-gitlab-commits/internal"
 	"github.com/alexandear/import-gitlab-commits/internal/testutil"
@@ -18,7 +17,7 @@ import (
 func TestGitLabCurrentUser(t *testing.T) {
 	gl := app.NewGitLab(testutil.NewLog(t), gitlabClient(t))
 
-	user, err := gl.CurrentUser(context.Background())
+	user, err := gl.CurrentUser(t.Context())
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, user.Name)
