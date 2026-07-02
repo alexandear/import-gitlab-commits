@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -32,6 +33,9 @@ type App struct {
 
 	committerName  string
 	committerEmail string
+
+	// Additional author emails to match commits against.
+	extraEmails []string
 }
 
 type User struct {
@@ -42,6 +46,7 @@ type User struct {
 }
 
 func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committerName, committerEmail string,
+	extraEmails []string,
 ) (*App, error) {
 	gitlabClient, err := gogitlab.NewClient(gitlabToken, gogitlab.WithBaseURL(gitlabBaseURL.String()))
 	if err != nil {
@@ -56,6 +61,7 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committ
 		gitlabBaseURL:  gitlabBaseURL,
 		committerName:  committerName,
 		committerEmail: committerEmail,
+		extraEmails:    extraEmails,
 	}, nil
 }
 
@@ -69,6 +75,8 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	a.logger.Printf("Found current user %q", currentUser.Name)
+
+	currentUser.Emails = slices.Concat(currentUser.Emails, a.extraEmails)
 
 	repoPath := "./" + repoName(a.gitlabBaseURL, currentUser)
 
