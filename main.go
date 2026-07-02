@@ -58,6 +58,7 @@ func Execute(logger *log.Logger) error {
 	}
 
 	var extraEmails []string
+
 	for e := range strings.SplitSeq(os.Getenv("EXTRA_AUTHOR_EMAILS"), ",") {
 		if e = strings.TrimSpace(e); e != "" {
 			extraEmails = append(extraEmails, e)
