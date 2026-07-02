@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -33,9 +34,7 @@ type App struct {
 	committerName  string
 	committerEmail string
 
-	// Additional author/committer emails to match commits against, beyond the ones
-	// confirmed on the GitLab account (e.g. old personal emails used before an
-	// email was registered/confirmed on GitLab).
+	// Additional author emails to match commits against.
 	extraEmails []string
 }
 
@@ -77,10 +76,7 @@ func (a *App) Run(ctx context.Context) error {
 
 	a.logger.Printf("Found current user %q", currentUser.Name)
 
-	if len(a.extraEmails) > 0 {
-		currentUser.Emails = append(currentUser.Emails, a.extraEmails...)
-		a.logger.Printf("Also matching extra emails: %v", a.extraEmails)
-	}
+	currentUser.Emails = slices.Concat(currentUser.Emails, a.extraEmails)
 
 	repoPath := "./" + repoName(a.gitlabBaseURL, currentUser)
 
