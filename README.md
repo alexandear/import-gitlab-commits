@@ -103,6 +103,10 @@ e.g., `https://gitlab.com`, `https://gitlab.gnome.org`, or any GitLab server.
 - `GITLAB_TOKEN` - a personal [access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token) with these scopes: `read_api`, `read_user`, `read_repository`.
 - `COMMITTER_NAME` - your GitHub name with surname, e.g., `John Doe` (can be passed to `git config user.name`).
 - `COMMITTER_EMAIL` - your GitHub email, e.g., `john.doe@example.com` (valid for `git config user.email`).
+- `EXTRA_AUTHOR_EMAILS` - optional, comma-separated list of additional emails to match commits and
+project contributors against, besides the ones confirmed on the GitLab account. Useful if some of
+your commits were authored with an email that isn't registered on your GitLab account, e.g. an old
+personal email.
 
 ## Internals
 

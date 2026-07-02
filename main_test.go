@@ -47,3 +47,26 @@ func TestExecute(t *testing.T) {
 		require.ErrorContains(t, err, "COMMITTER_EMAIL")
 	})
 }
+
+func TestParseExtraEmails(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want []string
+	}{
+		{name: "empty", raw: "", want: nil},
+		{name: "single", raw: "john@example.com", want: []string{"john@example.com"}},
+		{
+			name: "multiple with spaces",
+			raw:  "john@example.com, jane@example.com ,  extra@example.com",
+			want: []string{"john@example.com", "jane@example.com", "extra@example.com"},
+		},
+		{name: "empty entries are dropped", raw: "john@example.com,,  ,", want: []string{"john@example.com"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, parseExtraEmails(tt.raw))
+		})
+	}
+}

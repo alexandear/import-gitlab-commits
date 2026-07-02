@@ -32,6 +32,11 @@ type App struct {
 
 	committerName  string
 	committerEmail string
+
+	// Additional author/committer emails to match commits against, beyond the ones
+	// confirmed on the GitLab account (e.g. old personal emails used before an
+	// email was registered/confirmed on GitLab).
+	extraEmails []string
 }
 
 type User struct {
@@ -42,6 +47,7 @@ type User struct {
 }
 
 func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committerName, committerEmail string,
+	extraEmails []string,
 ) (*App, error) {
 	gitlabClient, err := gogitlab.NewClient(gitlabToken, gogitlab.WithBaseURL(gitlabBaseURL.String()))
 	if err != nil {
@@ -56,6 +62,7 @@ func New(logger *log.Logger, gitlabToken string, gitlabBaseURL *url.URL, committ
 		gitlabBaseURL:  gitlabBaseURL,
 		committerName:  committerName,
 		committerEmail: committerEmail,
+		extraEmails:    extraEmails,
 	}, nil
 }
 
@@ -69,6 +76,11 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	a.logger.Printf("Found current user %q", currentUser.Name)
+
+	if len(a.extraEmails) > 0 {
+		currentUser.Emails = append(currentUser.Emails, a.extraEmails...)
+		a.logger.Printf("Also matching extra emails: %v", a.extraEmails)
+	}
 
 	repoPath := "./" + repoName(a.gitlabBaseURL, currentUser)
 

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	app "github.com/alexandear/import-gitlab-commits/internal"
@@ -31,6 +32,8 @@ Environment Variables:
   GITLAB_TOKEN        GitLab personal access token (scopes: read_api, read_user, read_repository)
   COMMITTER_NAME      Your full name (e.g., John Doe)
   COMMITTER_EMAIL     Your email (e.g., john.doe@example.com)
+  EXTRA_AUTHOR_EMAILS Comma-separated list of additional emails to match commits/contributors
+                      against, besides the ones confirmed on the GitLab account (optional)
 `
 )
 
@@ -55,7 +58,9 @@ func Execute(logger *log.Logger) error {
 		return errors.New(`empty COMMITTER_EMAIL, example "john.doe@example.com"`)
 	}
 
-	application, err := app.New(logger, token, baseURL, committerName, committerEmail)
+	extraEmails := parseExtraEmails(os.Getenv("EXTRA_AUTHOR_EMAILS"))
+
+	application, err := app.New(logger, token, baseURL, committerName, committerEmail, extraEmails)
 	if err != nil {
 		return fmt.Errorf("create app: %w", err)
 	}
@@ -68,6 +73,20 @@ func Execute(logger *log.Logger) error {
 	}
 
 	return nil
+}
+
+// parseExtraEmails splits a comma-separated list of emails, trimming whitespace
+// and dropping empty entries.
+func parseExtraEmails(raw string) []string {
+	var emails []string
+
+	for e := range strings.SplitSeq(raw, ",") {
+		if e = strings.TrimSpace(e); e != "" {
+			emails = append(emails, e)
+		}
+	}
+
+	return emails
 }
 
 func main() {
