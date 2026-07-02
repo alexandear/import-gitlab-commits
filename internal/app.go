@@ -15,7 +15,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	gogitlab "gitlab.com/gitlab-org/api/client-go"
+	gogitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 const (
