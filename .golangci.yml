@@ -10,6 +10,7 @@ linters:
     - depguard
     - err113
     - exhaustruct
+    - exhaustruct_v5
     - gomodguard
     - mnd
     - noinlineerr
@@ -187,4 +188,7 @@ formatters:
         - default
         - prefix(github.com/alexandear/import-gitlab-commits)
     gofumpt:
-      extra-rules: true
+      extra:
+        group-params: true
+        clothe-returns: true
+        balance-calls: true
