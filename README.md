@@ -1,7 +1,5 @@
 # Import GitLab Commits
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/alexandear/import-gitlab-commits)](https://goreportcard.com/report/github.com/alexandear/import-gitlab-commits)
-
 This tool imports commits from a private GitLab repository to a separate repository.
 It can be used to showcase your programming activity for another company on GitHub.
 
